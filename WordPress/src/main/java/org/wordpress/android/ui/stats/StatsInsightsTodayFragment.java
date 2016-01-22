@@ -33,7 +33,7 @@ public class StatsInsightsTodayFragment extends StatsAbstractInsightsFragment {
     public void onAttach(Activity activity) {
         super.onAttach(activity);
         try {
-            mListener = (OnInsightsTodayClickListener) activity;
+            mListener = (OnInsightsTodayClickListener) getParentFragment();
         } catch (ClassCastException e) {
             throw new ClassCastException(activity.toString() + " must implement OnInsightsTodayClickListener");
         }

@@ -91,12 +91,12 @@ public class StatsVisitorsAndViewsFragment extends StatsAbstractFragment
     public void onAttach(Activity activity) {
         super.onAttach(activity);
         try {
-            mListener = (OnDateChangeListener) activity;
+            mListener = (OnDateChangeListener) getParentFragment();
         } catch (ClassCastException e) {
             throw new ClassCastException(activity.toString() + " must implement OnDateChangeListener");
         }
         try {
-            mOverviewItemChangeListener = (OnOverviewItemChangeListener) activity;
+            mOverviewItemChangeListener = (OnOverviewItemChangeListener) getParentFragment();
         } catch (ClassCastException e) {
             throw new ClassCastException(activity.toString() + " must implement OnOverviewItemChangeListener");
         }

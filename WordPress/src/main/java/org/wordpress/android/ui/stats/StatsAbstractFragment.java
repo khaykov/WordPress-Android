@@ -1,9 +1,8 @@
 package org.wordpress.android.ui.stats;
 
-
-import android.app.Fragment;
 import android.content.Intent;
 import android.os.Bundle;
+import android.support.v4.app.Fragment;
 
 import org.wordpress.android.WordPress;
 import org.wordpress.android.models.AccountHelper;

@@ -1,8 +1,8 @@
 package org.wordpress.android.ui.stats;
 
-import android.app.FragmentManager;
-import android.app.FragmentTransaction;
 import android.os.Bundle;
+import android.support.v4.app.FragmentManager;
+import android.support.v4.app.FragmentTransaction;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.text.TextUtils;
@@ -145,7 +145,7 @@ public class StatsViewAllActivity extends AppCompatActivity {
                 break;
         }
 
-        FragmentManager fm = getFragmentManager();
+        FragmentManager fm = getSupportFragmentManager();
         FragmentTransaction ft = fm.beginTransaction();
         mFragment = (StatsAbstractListFragment) fm.findFragmentByTag("ViewAll-Fragment");
         if (mFragment == null) {

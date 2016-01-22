@@ -26,6 +26,23 @@
                 android:layout_marginRight="@dimen/content_margin"
                 android:orientation="vertical">
 
+                <FrameLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="@color/grey_lighten_30"
+                    android:clickable="true"
+                    android:paddingLeft="8dp"
+                    android:paddingRight="16dp">
+
+                    <Spinner
+                        android:id="@+id/action_bar_spinner"
+                        style="@style/DropDownNav.WordPress"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:clickable="false"
+                        android:paddingLeft="0dp" />
+                </FrameLayout>
+
                 <!-- Insights -->
                 <LinearLayout
                     android:id="@+id/stats_insights_fragments_container"
