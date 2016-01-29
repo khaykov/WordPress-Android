@@ -62,11 +62,14 @@ public class CommentsListFragment extends Fragment {
 
     private UpdateCommentsTask mUpdateCommentsTask;
 
+    private OnCommentSelectedListener mOnCommentSelectedListener;
+
     private static final int COMMENTS_PER_PAGE = 30;
+
 
     private CommentAdapter getAdapter() {
         if (mAdapter == null) {
-             // called after comments have been loaded
+            // called after comments have been loaded
             CommentAdapter.OnDataLoadedListener dataLoadedListener = new CommentAdapter.OnDataLoadedListener() {
                 @Override
                 public void onDataLoaded(boolean isEmpty) {
@@ -93,7 +96,8 @@ public class CommentsListFragment extends Fragment {
             };
 
             // adapter calls this when selected comments have changed (CAB)
-            CommentAdapter.OnSelectedItemsChangeListener changeListener = new CommentAdapter.OnSelectedItemsChangeListener() {
+            CommentAdapter.OnSelectedItemsChangeListener changeListener = new CommentAdapter.OnSelectedItemsChangeListener
+                    () {
                 @Override
                 public void onSelectedItemsChanged() {
                     if (mActionMode != null) {
@@ -118,14 +122,16 @@ public class CommentsListFragment extends Fragment {
                     if (mActionMode == null) {
                         if (!getAdapter().isModeratingCommentId(comment.commentID)) {
                             mRecycler.invalidate();
-                            if (getActivity() instanceof OnCommentSelectedListener) {
-                                ((OnCommentSelectedListener) getActivity()).onCommentSelected(comment.commentID);
+                            if(mOnCommentSelectedListener != null){
+                                mOnCommentSelectedListener.onCommentSelected(comment.commentID);
                             }
+
                         }
                     } else {
                         getAdapter().toggleItemSelected(position, view);
                     }
                 }
+
                 @Override
                 public void onCommentLongPressed(int position, View view) {
                     // enable CAB if it's not already enabled
@@ -256,7 +262,7 @@ public class CommentsListFragment extends Fragment {
         final CommentList updateComments = new CommentList();
 
         // build list of comments whose status is different than passed
-        for (Comment comment: selectedComments) {
+        for (Comment comment : selectedComments) {
             if (comment.getStatusEnum() != newStatus)
                 updateComments.add(comment);
         }
@@ -278,7 +284,7 @@ public class CommentsListFragment extends Fragment {
             case TRASH:
                 dlgId = CommentDialogs.ID_COMMENT_DLG_TRASHING;
                 break;
-            default :
+            default:
                 return;
         }
         getActivity().showDialog(dlgId);
@@ -445,10 +451,10 @@ public class CommentsListFragment extends Fragment {
                 hPost.put("number", COMMENTS_PER_PAGE);
             }
 
-            Object[] params = { blog.getRemoteBlogId(),
-                                blog.getUsername(),
-                                blog.getPassword(),
-                                hPost };
+            Object[] params = {blog.getRemoteBlogId(),
+                    blog.getUsername(),
+                    blog.getPassword(),
+                    hPost};
             try {
                 return ApiHelper.refreshComments(blog, params);
             } catch (XMLRPCFault xmlrpcFault) {
@@ -500,7 +506,6 @@ public class CommentsListFragment extends Fragment {
                     updateEmptyView(EmptyViewMessageType.NO_CONTENT);
                 }
             }
-
         }
     }
 
@@ -622,10 +627,10 @@ public class CommentsListFragment extends Fragment {
             boolean hasSpam = hasSelection && selectedComments.hasAnyWithStatus(CommentStatus.SPAM);
             boolean hasAnyNonSpam = hasSelection && selectedComments.hasAnyWithoutStatus(CommentStatus.SPAM);
 
-            setItemEnabled(menu, R.id.menu_approve,   hasUnapproved || hasSpam);
+            setItemEnabled(menu, R.id.menu_approve, hasUnapproved || hasSpam);
             setItemEnabled(menu, R.id.menu_unapprove, hasApproved);
-            setItemEnabled(menu, R.id.menu_spam,      hasAnyNonSpam);
-            setItemEnabled(menu, R.id.menu_trash,     hasSelection);
+            setItemEnabled(menu, R.id.menu_spam, hasAnyNonSpam);
+            setItemEnabled(menu, R.id.menu_trash, hasSelection);
 
             return true;
         }
@@ -660,5 +665,10 @@ public class CommentsListFragment extends Fragment {
             mSwipeToRefreshHelper.setEnabled(true);
             mActionMode = null;
         }
+    }
+
+
+    public void setOnCommentSelectedListener(OnCommentSelectedListener onCommentSelectedListener) {
+        mOnCommentSelectedListener = onCommentSelectedListener;
     }
 }
