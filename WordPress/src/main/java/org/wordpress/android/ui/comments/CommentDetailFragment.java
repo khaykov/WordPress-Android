@@ -1,11 +1,11 @@
 package org.wordpress.android.ui.comments;
 
 import android.app.Activity;
-import android.app.Fragment;
-import android.app.FragmentManager;
-import android.app.FragmentTransaction;
 import android.content.Intent;
 import android.os.Bundle;
+import android.support.v4.app.Fragment;
+import android.support.v4.app.FragmentManager;
+import android.support.v4.app.FragmentTransaction;
 import android.text.Html;
 import android.text.TextUtils;
 import android.view.KeyEvent;
@@ -601,7 +601,7 @@ public class CommentDetailFragment extends Fragment implements NotificationFragm
             }
         }
 
-        getFragmentManager().invalidateOptionsMenu();
+       getActivity().supportInvalidateOptionsMenu();
     }
 
     /*
@@ -1024,7 +1024,7 @@ public class CommentDetailFragment extends Fragment implements NotificationFragm
 
         setComment(localBlogId, note.buildComment());
 
-        getFragmentManager().invalidateOptionsMenu();
+        getActivity().supportInvalidateOptionsMenu();
     }
 
     // Like or unlike a comment via the REST API

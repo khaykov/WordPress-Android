@@ -1,11 +1,11 @@
 package org.wordpress.android.ui.comments;
 
 import android.app.AlertDialog;
-import android.app.Fragment;
 import android.content.DialogInterface;
 import android.graphics.drawable.Drawable;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.support.v4.app.Fragment;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.view.ActionMode;
 import android.support.v7.widget.LinearLayoutManager;
@@ -171,9 +171,9 @@ public class CommentsListFragment extends Fragment {
 
         Bundle extras = getActivity().getIntent().getExtras();
         if (extras != null) {
-            mHasAutoRefreshedComments = extras.getBoolean(CommentsActivity.KEY_AUTO_REFRESHED);
+            mHasAutoRefreshedComments = extras.getBoolean(CommentsFragment.KEY_AUTO_REFRESHED);
             mEmptyViewMessageType = EmptyViewMessageType.getEnumFromString(extras.getString(
-                    CommentsActivity.KEY_EMPTY_VIEW_MESSAGE));
+                    CommentsFragment.KEY_EMPTY_VIEW_MESSAGE));
         } else {
             mHasAutoRefreshedComments = false;
             mEmptyViewMessageType = EmptyViewMessageType.NO_CONTENT;

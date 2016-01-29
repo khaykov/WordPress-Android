@@ -1,8 +1,8 @@
 package org.wordpress.android.ui.notifications;
 
-import android.app.Fragment;
 import android.content.Intent;
 import android.os.Bundle;
+import android.support.v4.app.Fragment;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.view.MenuItem;
@@ -71,7 +71,7 @@ public class NotificationsDetailActivity extends AppCompatActivity implements
                     AnalyticsTracker.track(AnalyticsTracker.Stat.NOTIFICATIONS_OPENED_NOTIFICATION_DETAILS, properties);
 
                     Fragment detailFragment = getDetailFragmentForNote(note);
-                    getFragmentManager().beginTransaction()
+                    getSupportFragmentManager().beginTransaction()
                             .add(R.id.notifications_detail_container, detailFragment)
                             .commitAllowingStateLoss();
 

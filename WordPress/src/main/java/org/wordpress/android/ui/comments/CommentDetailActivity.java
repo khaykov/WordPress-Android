@@ -64,7 +64,7 @@ public class CommentDetailActivity extends AppCompatActivity {
 
             if (commentDetailFragment != null) {
                 commentDetailFragment.setRetainInstance(true);
-                getFragmentManager().beginTransaction()
+                getSupportFragmentManager().beginTransaction()
                         .add(R.id.comment_detail_container, commentDetailFragment, TAG_COMMENT_DETAIL_FRAGMENT)
                         .commit();
             } else {
