@@ -43,8 +43,6 @@ import org.wordpress.android.models.Suggestion;
 import org.wordpress.android.ui.ActivityId;
 import org.wordpress.android.ui.comments.CommentActions.ChangeType;
 import org.wordpress.android.ui.comments.CommentActions.ChangedFrom;
-import org.wordpress.android.ui.comments.CommentActions.OnCommentActionListener;
-import org.wordpress.android.ui.comments.CommentActions.OnCommentChangeListener;
 import org.wordpress.android.ui.comments.CommentActions.OnNoteCommentActionListener;
 import org.wordpress.android.ui.notifications.NotificationFragment;
 import org.wordpress.android.ui.notifications.NotificationsDetailListFragment;
@@ -124,9 +122,6 @@ public class CommentDetailFragment extends Fragment implements NotificationFragm
 
     private NotificationsDetailListFragment mNotificationsDetailListFragment;
 
-    private OnCommentChangeListener mOnCommentChangeListener;
-    private OnPostClickListener mOnPostClickListener;
-    private OnCommentActionListener mOnCommentActionListener;
     private OnNoteCommentActionListener mOnNoteCommentActionListener;
 
     private static final String KEY_LOCAL_BLOG_ID = "local_blog_id";
@@ -215,11 +210,11 @@ public class CommentDetailFragment extends Fragment implements NotificationFragm
 
         mLayoutButtons = (ViewGroup) inflater.inflate(R.layout.comment_action_footer, null, false);
         mBtnLikeComment = mLayoutButtons.findViewById(R.id.btn_like);
-        mBtnLikeIcon = (ImageView)mLayoutButtons.findViewById(R.id.btn_like_icon);
-        mBtnLikeTextView = (TextView)mLayoutButtons.findViewById(R.id.btn_like_text);
+        mBtnLikeIcon = (ImageView) mLayoutButtons.findViewById(R.id.btn_like_icon);
+        mBtnLikeTextView = (TextView) mLayoutButtons.findViewById(R.id.btn_like_text);
         mBtnModerateComment = mLayoutButtons.findViewById(R.id.btn_moderate);
-        mBtnModerateIcon = (ImageView)mLayoutButtons.findViewById(R.id.btn_moderate_icon);
-        mBtnModerateTextView = (TextView)mLayoutButtons.findViewById(R.id.btn_moderate_text);
+        mBtnModerateIcon = (ImageView) mLayoutButtons.findViewById(R.id.btn_moderate_icon);
+        mBtnModerateTextView = (TextView) mLayoutButtons.findViewById(R.id.btn_moderate_text);
         mBtnSpamComment = (TextView) mLayoutButtons.findViewById(R.id.text_btn_spam);
         mBtnTrashComment = (TextView) mLayoutButtons.findViewById(R.id.image_trash_comment);
 
@@ -314,7 +309,8 @@ public class CommentDetailFragment extends Fragment implements NotificationFragm
         if (!isAdded()) return;
 
         mSuggestionServiceConnectionManager = new SuggestionServiceConnectionManager(getActivity(), mRemoteBlogId);
-        mSuggestionAdapter = SuggestionUtils.setupSuggestions(mRemoteBlogId, getActivity(), mSuggestionServiceConnectionManager);
+        mSuggestionAdapter = SuggestionUtils.setupSuggestions(mRemoteBlogId, getActivity(),
+                mSuggestionServiceConnectionManager);
         if (mSuggestionAdapter != null) {
             mEditReply.setAdapter(mSuggestionAdapter);
         }
@@ -376,12 +372,6 @@ public class CommentDetailFragment extends Fragment implements NotificationFragm
 
     public void onAttach(Activity activity) {
         super.onAttach(activity);
-        if (activity instanceof OnCommentChangeListener)
-            mOnCommentChangeListener = (OnCommentChangeListener) activity;
-        if (activity instanceof OnPostClickListener)
-            mOnPostClickListener = (OnPostClickListener) activity;
-        if (activity instanceof OnCommentActionListener)
-            mOnCommentActionListener = (OnCommentActionListener) activity;
         if (activity instanceof OnNoteCommentActionListener)
             mOnNoteCommentActionListener = (OnNoteCommentActionListener) activity;
     }
@@ -425,9 +415,9 @@ public class CommentDetailFragment extends Fragment implements NotificationFragm
             if (mNote == null) {
                 reloadComment();
             }
-            // tell the host to reload the comment list
-            if (mOnCommentChangeListener != null)
-                mOnCommentChangeListener.onCommentChanged(ChangedFrom.COMMENT_DETAIL, ChangeType.EDITED);
+
+            // tell the listener to reload the comment list
+            EventBus.getDefault().postSticky(new CommentChangedEvent(ChangedFrom.COMMENT_DETAIL, ChangeType.EDITED));
         }
     }
 
@@ -565,7 +555,8 @@ public class CommentDetailFragment extends Fragment implements NotificationFragm
 
         int avatarSz = getResources().getDimensionPixelSize(R.dimen.avatar_sz_large);
         if (mComment.hasProfileImageUrl()) {
-            imgAvatar.setImageUrl(GravatarUtils.fixGravatarUrl(mComment.getProfileImageUrl(), avatarSz), WPNetworkImageView.ImageType.AVATAR);
+            imgAvatar.setImageUrl(GravatarUtils.fixGravatarUrl(mComment.getProfileImageUrl(), avatarSz),
+                    WPNetworkImageView.ImageType.AVATAR);
         } else if (mComment.hasAuthorEmail()) {
             String avatarUrl = GravatarUtils.gravatarFromEmail(mComment.getAuthorEmail(), avatarSz);
             imgAvatar.setImageUrl(avatarUrl, WPNetworkImageView.ImageType.AVATAR);
@@ -601,7 +592,7 @@ public class CommentDetailFragment extends Fragment implements NotificationFragm
             }
         }
 
-       getActivity().supportInvalidateOptionsMenu();
+        getActivity().supportInvalidateOptionsMenu();
     }
 
     /*
@@ -677,38 +668,32 @@ public class CommentDetailFragment extends Fragment implements NotificationFragm
             if (!postExists) {
                 AppLog.d(T.COMMENTS, "comment detail > retrieving post");
                 ReaderPostActions.requestPost(blogId, postId, new ReaderActions.OnRequestListener() {
-                            @Override
-                            public void onSuccess() {
-                                if (!isAdded()) return;
+                    @Override
+                    public void onSuccess() {
+                        if (!isAdded()) return;
 
-                                // update title if it wasn't set above
-                                if (!hasTitle) {
-                                    String postTitle = ReaderPostTable.getPostTitle(blogId, postId);
-                                    if (!TextUtils.isEmpty(postTitle)) {
-                                        setPostTitle(txtPostTitle, postTitle, true);
-                                    } else {
-                                        txtPostTitle.setText(R.string.untitled);
-                                    }
-                                }
+                        // update title if it wasn't set above
+                        if (!hasTitle) {
+                            String postTitle = ReaderPostTable.getPostTitle(blogId, postId);
+                            if (!TextUtils.isEmpty(postTitle)) {
+                                setPostTitle(txtPostTitle, postTitle, true);
+                            } else {
+                                txtPostTitle.setText(R.string.untitled);
                             }
+                        }
+                    }
 
-                            @Override
-                            public void onFailure(int statusCode) {
-                                // noop
-                            }
-                        });
+                    @Override
+                    public void onFailure(int statusCode) {
+                        // noop
+                    }
+                });
             }
 
             txtPostTitle.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    if (mOnPostClickListener != null) {
-                        mOnPostClickListener.onPostClicked(getNote(), mRemoteBlogId, (int) mComment.postID);
-                    } else {
-                        // right now this will happen from notifications
-                        AppLog.i(T.COMMENTS, "comment detail > no post click listener");
-                        ReaderActivityLauncher.showReaderPostDetail(getActivity(), mRemoteBlogId, mComment.postID);
-                    }
+                    ReaderActivityLauncher.showReaderPostDetail(getActivity(), mRemoteBlogId, mComment.postID);
                 }
             });
         }
@@ -740,35 +725,35 @@ public class CommentDetailFragment extends Fragment implements NotificationFragm
         if (!NetworkUtils.checkConnection(getActivity()))
             return;
 
-        // Fire the appropriate listener if we have one
+        // Fire the appropriate listener if we have one.
         if (mNote != null && mOnNoteCommentActionListener != null) {
             mOnNoteCommentActionListener.onModerateCommentForNote(mNote, newStatus);
             trackModerationFromNotification(newStatus);
-            return;
-        } else if (mOnCommentActionListener != null) {
-            mOnCommentActionListener.onModerateComment(mLocalBlogId, mComment, newStatus);
-            return;
+        } else {
+            EventBus.getDefault().postSticky(new CommentModeratedEvent(mLocalBlogId, mComment, newStatus));
+            getActivity().finish();
         }
 
-        if (mNote == null) return;
+        //CommentDetailActivity is not used without CommentActivity so this will be commented out for now
 
-        // Basic moderation support, currently only used when this Fragment is in a CommentDetailActivity
-        // Uses WP.com REST API and requires a note object
-        final CommentStatus oldStatus = mComment.getStatusEnum();
-        mComment.setStatus(CommentStatus.toString(newStatus));
-        updateStatusViews();
-        CommentActions.moderateCommentRestApi(mNote.getSiteId(), mComment.commentID, newStatus, new CommentActions.CommentActionListener() {
-            @Override
-            public void onActionResult(boolean succeeded) {
-                if (!isAdded()) return;
-
-                if (!succeeded) {
-                    mComment.setStatus(CommentStatus.toString(oldStatus));
-                    updateStatusViews();
-                    ToastUtils.showToast(getActivity(), R.string.error_moderate_comment);
-                }
-            }
-        });
+//        // Basic moderation support, currently only used when this Fragment is in a CommentDetailActivity
+//        // Uses WP.com REST API and requires a note object
+//        final CommentStatus oldStatus = mComment.getStatusEnum();
+//        mComment.setStatus(CommentStatus.toString(newStatus));
+//        updateStatusViews();
+//        CommentActions.moderateCommentRestApi(mNote.getSiteId(), mComment.commentID, newStatus, new CommentActions
+//                .CommentActionListener() {
+//            @Override
+//            public void onActionResult(boolean succeeded) {
+//                if (!isAdded()) return;
+//
+//                if (!succeeded) {
+//                    mComment.setStatus(CommentStatus.toString(oldStatus));
+//                    updateStatusViews();
+//                    ToastUtils.showToast(getActivity(), R.string.error_moderate_comment);
+//                }
+//            }
+//        });
     }
 
     /*
@@ -796,8 +781,10 @@ public class CommentDetailFragment extends Fragment implements NotificationFragm
             @Override
             public void onActionResult(boolean succeeded) {
                 mIsSubmittingReply = false;
-                if (succeeded && mOnCommentChangeListener != null)
-                    mOnCommentChangeListener.onCommentChanged(ChangedFrom.COMMENT_DETAIL, ChangeType.REPLIED);
+                if (succeeded) {
+                    EventBus.getDefault().postSticky(new CommentChangedEvent(ChangedFrom.COMMENT_DETAIL, ChangeType
+                            .REPLIED));
+                }
                 if (isAdded()) {
                     mEditReply.setEnabled(true);
                     mSubmitReplyBtn.setVisibility(View.VISIBLE);
@@ -939,7 +926,8 @@ public class CommentDetailFragment extends Fragment implements NotificationFragm
         if (status == CommentStatus.APPROVED) {
             mBtnModerateIcon.setImageResource(R.drawable.ic_action_approve_active);
             mBtnModerateTextView.setText(R.string.comment_status_approved);
-            mBtnModerateTextView.setTextColor(getActivity().getResources().getColor(R.color.notification_status_unapproved_dark));
+            mBtnModerateTextView.setTextColor(getActivity().getResources().getColor(R.color
+                    .notification_status_unapproved_dark));
         } else {
             mBtnModerateIcon.setImageResource(R.drawable.ic_action_approve);
             mBtnModerateTextView.setText(R.string.mnu_comment_approve);
@@ -954,22 +942,28 @@ public class CommentDetailFragment extends Fragment implements NotificationFragm
         if (mEnabledActions == null)
             return false;
         return (mEnabledActions.contains(EnabledActions.ACTION_APPROVE)
-             || mEnabledActions.contains(EnabledActions.ACTION_UNAPPROVE));
+                || mEnabledActions.contains(EnabledActions.ACTION_UNAPPROVE));
     }
+
     private boolean canMarkAsSpam() {
         return (mEnabledActions != null && mEnabledActions.contains(EnabledActions.ACTION_SPAM));
     }
+
     private boolean canReply() {
         return (mEnabledActions != null && mEnabledActions.contains(EnabledActions.ACTION_REPLY));
     }
+
     private boolean canTrash() {
         return canModerate();
     }
+
     private boolean canEdit() {
         return (mLocalBlogId > 0 && canModerate());
     }
+
     private boolean canLike() {
-        return (!mShouldRequestCommentFromNote && mEnabledActions != null && mEnabledActions.contains(EnabledActions.ACTION_LIKE));
+        return (!mShouldRequestCommentFromNote && mEnabledActions != null && mEnabledActions.contains(EnabledActions
+                .ACTION_LIKE));
     }
 
     /*
@@ -1036,7 +1030,7 @@ public class CommentDetailFragment extends Fragment implements NotificationFragm
         ReaderAnim.animateLikeButton(mBtnLikeIcon, mBtnLikeComment.isActivated());
 
         // Bump analytics
-        AnalyticsTracker.track(mBtnLikeComment.isActivated() ? Stat.NOTIFICATION_LIKED :  Stat.NOTIFICATION_UNLIKED);
+        AnalyticsTracker.track(mBtnLikeComment.isActivated() ? Stat.NOTIFICATION_LIKED : Stat.NOTIFICATION_UNLIKED);
 
         boolean commentWasUnapproved = false;
         if (mNotificationsDetailListFragment != null && mComment != null) {
@@ -1057,7 +1051,7 @@ public class CommentDetailFragment extends Fragment implements NotificationFragm
                 new RestRequest.Listener() {
                     @Override
                     public void onResponse(JSONObject response) {
-                        if (response != null && !response.optBoolean("success"))  {
+                        if (response != null && !response.optBoolean("success")) {
                             if (!isAdded()) return;
 
                             // Failed, so switch the button state back
@@ -1161,5 +1155,49 @@ public class CommentDetailFragment extends Fragment implements NotificationFragm
 
     private void setRemoteBlogId(int remoteBlogId) {
         mRemoteBlogId = remoteBlogId;
+    }
+
+    public static class CommentChangedEvent {
+
+        private ChangedFrom mChangedFrom;
+        private ChangeType mChangeType;
+
+        public CommentChangedEvent(ChangedFrom changedFrom, ChangeType changeType) {
+            mChangedFrom = changedFrom;
+            mChangeType = changeType;
+        }
+
+        public ChangedFrom getChangedFrom() {
+            return mChangedFrom;
+        }
+
+        public ChangeType getChangeType() {
+            return mChangeType;
+        }
+    }
+
+    public static class CommentModeratedEvent {
+
+        private int mAccountId;
+        private Comment mComment;
+        private CommentStatus mNewStatus;
+
+        public CommentModeratedEvent(int accountId, Comment comment, CommentStatus newStatus) {
+            mAccountId = accountId;
+            mComment = comment;
+            mNewStatus = newStatus;
+        }
+
+        public int getAccountId() {
+            return mAccountId;
+        }
+
+        public Comment getComment() {
+            return mComment;
+        }
+
+        public CommentStatus getNewStatus() {
+            return mNewStatus;
+        }
     }
 }
