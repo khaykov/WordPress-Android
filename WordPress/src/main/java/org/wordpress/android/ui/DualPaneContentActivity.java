@@ -32,6 +32,7 @@ public abstract class DualPaneContentActivity extends AppCompatActivity {
 
         boolean isLaunchedFromDualPaneDashboard = getIntent().getBooleanExtra(ARG_LAUNCHED_FROM_DUAL_PANE_HOST, false);
 
+     
         // When activity launched from dual pane host gets recreated in dual pane mode it calls finish(), but before that,
         // it grabs nested fragment's state and broadcasts it using EventBus. Dual pane host get's it and use's it to show
         // fragment in dual pane mode.
@@ -46,6 +47,8 @@ public abstract class DualPaneContentActivity extends AppCompatActivity {
             }
 
             finish();
+            //no transitions are allowed when the activity is switching to single pane mode
+            overridePendingTransition(0, 0);
         }
     }
 
