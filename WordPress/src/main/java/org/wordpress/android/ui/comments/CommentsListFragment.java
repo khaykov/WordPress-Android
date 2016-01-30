@@ -47,6 +47,9 @@ public class CommentsListFragment extends Fragment {
         void onCommentSelected(long commentId);
     }
 
+    private static final String KEY_AUTO_REFRESHED = "has_auto_refreshed";
+    private static final String KEY_EMPTY_VIEW_MESSAGE = "empty_view_message";
+
     private boolean mIsUpdatingComments = false;
     private boolean mCanLoadMoreComments = true;
     boolean mHasAutoRefreshedComments = false;
@@ -62,10 +65,7 @@ public class CommentsListFragment extends Fragment {
 
     private UpdateCommentsTask mUpdateCommentsTask;
 
-    private OnCommentSelectedListener mOnCommentSelectedListener;
-
     private static final int COMMENTS_PER_PAGE = 30;
-
 
     private CommentAdapter getAdapter() {
         if (mAdapter == null) {
@@ -122,10 +122,9 @@ public class CommentsListFragment extends Fragment {
                     if (mActionMode == null) {
                         if (!getAdapter().isModeratingCommentId(comment.commentID)) {
                             mRecycler.invalidate();
-                            if(mOnCommentSelectedListener != null){
-                                mOnCommentSelectedListener.onCommentSelected(comment.commentID);
+                            if (getParentFragment() != null && getParentFragment() instanceof OnCommentSelectedListener) {
+                                ((OnCommentSelectedListener) getParentFragment()).onCommentSelected(comment.commentID);
                             }
-
                         }
                     } else {
                         getAdapter().toggleItemSelected(position, view);
@@ -175,14 +174,10 @@ public class CommentsListFragment extends Fragment {
     public void onActivityCreated(Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
 
-        Bundle extras = getActivity().getIntent().getExtras();
-        if (extras != null) {
-            mHasAutoRefreshedComments = extras.getBoolean(CommentsFragment.KEY_AUTO_REFRESHED);
-            mEmptyViewMessageType = EmptyViewMessageType.getEnumFromString(extras.getString(
-                    CommentsFragment.KEY_EMPTY_VIEW_MESSAGE));
-        } else {
-            mHasAutoRefreshedComments = false;
-            mEmptyViewMessageType = EmptyViewMessageType.NO_CONTENT;
+        if (savedInstanceState != null) {
+            mHasAutoRefreshedComments = savedInstanceState.getBoolean(KEY_AUTO_REFRESHED, false);
+            mEmptyViewMessageType = EmptyViewMessageType.getEnumFromString(
+                    savedInstanceState.getString(KEY_EMPTY_VIEW_MESSAGE, EmptyViewMessageType.NO_CONTENT.name()));
         }
 
         if (!NetworkUtils.isNetworkAvailable(getActivity())) {
@@ -511,10 +506,13 @@ public class CommentsListFragment extends Fragment {
 
     @Override
     public void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
         if (outState.isEmpty()) {
             outState.putBoolean("bug_19917_fix", true);
         }
-        super.onSaveInstanceState(outState);
+
+        outState.putBoolean(KEY_AUTO_REFRESHED, mHasAutoRefreshedComments);
+        outState.putString(KEY_EMPTY_VIEW_MESSAGE, getEmptyViewMessage());
     }
 
     private void hideEmptyView() {
@@ -665,10 +663,5 @@ public class CommentsListFragment extends Fragment {
             mSwipeToRefreshHelper.setEnabled(true);
             mActionMode = null;
         }
-    }
-
-
-    public void setOnCommentSelectedListener(OnCommentSelectedListener onCommentSelectedListener) {
-        mOnCommentSelectedListener = onCommentSelectedListener;
     }
 }
