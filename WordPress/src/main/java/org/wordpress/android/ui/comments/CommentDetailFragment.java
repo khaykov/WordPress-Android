@@ -416,7 +416,7 @@ public class CommentDetailFragment extends Fragment implements NotificationFragm
                 reloadComment();
             }
 
-            // tell the listener to reload the comment list
+            // tell the subscribers that comment have been edited
             EventBus.getDefault().postSticky(new CommentChangedEvent(ChangedFrom.COMMENT_DETAIL, ChangeType.EDITED));
         }
     }
@@ -725,7 +725,7 @@ public class CommentDetailFragment extends Fragment implements NotificationFragm
         if (!NetworkUtils.checkConnection(getActivity()))
             return;
 
-        // Fire the appropriate listener if we have one.
+        //this will be called when fragment is hosted in notifications activity
         if (mNote != null && mOnNoteCommentActionListener != null) {
             mOnNoteCommentActionListener.onModerateCommentForNote(mNote, newStatus);
             trackModerationFromNotification(newStatus);
@@ -734,7 +734,7 @@ public class CommentDetailFragment extends Fragment implements NotificationFragm
             getActivity().finish();
         }
 
-        //CommentDetailActivity is not used without CommentActivity so this will be commented out for now
+        //CommentDetailActivity is not used without CommentActivity so this will be commented  for now
 
 //        // Basic moderation support, currently only used when this Fragment is in a CommentDetailActivity
 //        // Uses WP.com REST API and requires a note object
