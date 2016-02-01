@@ -18,13 +18,14 @@ import org.wordpress.android.models.CommentList;
 import org.wordpress.android.util.AniUtils;
 import org.wordpress.android.util.AppLog;
 import org.wordpress.android.util.DateTimeUtils;
+import org.wordpress.android.util.DisplayUtils;
 import org.wordpress.android.widgets.WPNetworkImageView;
 
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 
-class CommentAdapter  extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
+class CommentAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     interface OnDataLoadedListener {
         void onDataLoaded(boolean isEmpty);
     }
@@ -39,8 +40,12 @@ class CommentAdapter  extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
     interface OnCommentPressedListener {
         void onCommentPressed(int position, View view);
+
         void onCommentLongPressed(int position, View view);
     }
+
+    private static final int VIEW_TYPE_COMMENT = 0;
+    private static final int VIEW_TYPE_ENDLIST_INDICATOR = 1;
 
     private final LayoutInflater mInflater;
 
@@ -57,6 +62,7 @@ class CommentAdapter  extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     private final String mStatusTextUnapproved;
     private final int mSelectedColor;
     private final int mUnselectedColor;
+    private final int mEndlistIndicatorHeight;
 
     private OnDataLoadedListener mOnDataLoadedListener;
     private OnCommentPressedListener mOnCommentPressedListener;
@@ -107,6 +113,12 @@ class CommentAdapter  extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         }
     }
 
+    class EndListViewHolder extends RecyclerView.ViewHolder {
+        public EndListViewHolder(View view) {
+            super(view);
+        }
+    }
+
     CommentAdapter(Context context, int localBlogId) {
         mInflater = LayoutInflater.from(context);
 
@@ -122,6 +134,9 @@ class CommentAdapter  extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         mStatusTextUnapproved = context.getResources().getString(R.string.comment_status_unapproved);
 
         mAvatarSz = context.getResources().getDimensionPixelSize(R.dimen.avatar_sz_medium);
+
+        // endlist indicator height is hard-coded here so that its horz line is in the middle of the fab
+        mEndlistIndicatorHeight = DisplayUtils.dpToPx(context, 74);
 
         setHasStableIds(true);
     }
@@ -143,15 +158,34 @@ class CommentAdapter  extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     }
 
     @Override
+    public int getItemViewType(int position) {
+        if (position == mComments.size()) {
+            return VIEW_TYPE_ENDLIST_INDICATOR;
+        }
+        return VIEW_TYPE_COMMENT;
+    }
+
+    @Override
     public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
-        View view = mInflater.inflate(R.layout.comment_listitem, null);
-        CommentHolder holder = new CommentHolder(view);
-        view.setTag(holder);
-        return holder;
+        if (viewType == VIEW_TYPE_ENDLIST_INDICATOR) {
+            View view = mInflater.inflate(R.layout.endlist_indicator, parent, false);
+            view.getLayoutParams().height = mEndlistIndicatorHeight;
+            return new EndListViewHolder(view);
+        } else {
+            View view = mInflater.inflate(R.layout.comment_listitem, parent, false);
+            CommentHolder holder = new CommentHolder(view);
+            view.setTag(holder);
+            return holder;
+        }
     }
 
     @Override
     public void onBindViewHolder(RecyclerView.ViewHolder viewHolder, int position) {
+        // nothing to do if this is the static endlist indicator
+        if (getItemViewType(position) == VIEW_TYPE_ENDLIST_INDICATOR) {
+            return;
+        }
+
         Comment comment = mComments.get(position);
         CommentHolder holder = (CommentHolder) viewHolder;
 
@@ -168,7 +202,7 @@ class CommentAdapter  extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         // status is only shown for comments that haven't been approved
         final boolean showStatus;
         switch (comment.getStatusEnum()) {
-            case SPAM :
+            case SPAM:
                 showStatus = true;
                 holder.txtStatus.setText(mStatusTextSpam);
                 holder.txtStatus.setTextColor(mStatusColorSpam);
@@ -178,7 +212,7 @@ class CommentAdapter  extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
                 holder.txtStatus.setText(mStatusTextUnapproved);
                 holder.txtStatus.setTextColor(mStatusColorUnapproved);
                 break;
-            default :
+            default:
                 showStatus = false;
                 break;
         }
@@ -211,7 +245,7 @@ class CommentAdapter  extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         }
 
         // request to load more comments when we near the end
-        if (mOnLoadMoreListener != null && position >= getItemCount()-1) {
+        if (mOnLoadMoreListener != null && position >= mComments.size() - 1) {
             mOnLoadMoreListener.onLoadMore();
         }
     }
@@ -226,12 +260,17 @@ class CommentAdapter  extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
     @Override
     public long getItemId(int position) {
+        if (getItemViewType(position) == VIEW_TYPE_ENDLIST_INDICATOR) return -1;
         return mComments.get(position).commentID;
     }
 
     @Override
     public int getItemCount() {
-        return mComments.size();
+        if (mComments.size() == 0) {
+            return 0;
+        } else {
+            return mComments.size() + 1; // +1 for the endlist indicator
+        }
     }
 
     boolean isEmpty() {
@@ -269,7 +308,7 @@ class CommentAdapter  extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
             return comments;
         }
 
-        for (Integer position: mSelectedPositions) {
+        for (Integer position : mSelectedPositions) {
             if (isPositionValid(position))
                 comments.add(mComments.get(position));
         }
@@ -373,16 +412,20 @@ class CommentAdapter  extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
      * AsyncTask to load comments from SQLite
      */
     private boolean mIsLoadTaskRunning = false;
+
     private class LoadCommentsTask extends AsyncTask<Void, Void, Boolean> {
         CommentList tmpComments;
+
         @Override
         protected void onPreExecute() {
             mIsLoadTaskRunning = true;
         }
+
         @Override
         protected void onCancelled() {
             mIsLoadTaskRunning = false;
         }
+
         @Override
         protected Boolean doInBackground(Void... params) {
             tmpComments = CommentTable.getCommentsForBlog(mLocalBlogId);
@@ -391,7 +434,7 @@ class CommentAdapter  extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
             }
 
             // pre-calc transient values so they're cached prior to display
-            for (Comment comment: tmpComments) {
+            for (Comment comment : tmpComments) {
                 comment.getDatePublished();
                 comment.getUnescapedCommentText();
                 comment.getUnescapedPostTitle();
@@ -401,6 +444,7 @@ class CommentAdapter  extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
             return true;
         }
+
         @Override
         protected void onPostExecute(Boolean result) {
             if (result) {
