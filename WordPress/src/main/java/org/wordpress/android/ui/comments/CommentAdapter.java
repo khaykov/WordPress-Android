@@ -26,23 +26,6 @@ import java.util.HashSet;
 import java.util.List;
 
 class CommentAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
-    interface OnDataLoadedListener {
-        void onDataLoaded(boolean isEmpty);
-    }
-
-    interface OnLoadMoreListener {
-        void onLoadMore();
-    }
-
-    interface OnSelectedItemsChangeListener {
-        void onSelectedItemsChanged();
-    }
-
-    interface OnCommentPressedListener {
-        void onCommentPressed(int position, View view);
-
-        void onCommentLongPressed(int position, View view);
-    }
 
     private static final int VIEW_TYPE_COMMENT = 0;
     private static final int VIEW_TYPE_ENDLIST_INDICATOR = 1;
@@ -50,7 +33,7 @@ class CommentAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     private final LayoutInflater mInflater;
 
     private final CommentList mComments = new CommentList();
-    private final HashSet<Integer> mSelectedPositions = new HashSet<>();
+    private final HashSet<Long> mSelectedCommentsId = new HashSet<>();
     private final List<Long> mModeratingCommentsIds = new ArrayList<>();
 
     private final int mStatusColorSpam;
@@ -70,6 +53,33 @@ class CommentAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     private OnSelectedItemsChangeListener mOnSelectedChangeListener;
 
     private boolean mEnableSelection;
+
+    public CommentAdapter(Context context, int localBlogId, HashSet<Long> preSelectedCommentsId) {
+        mInflater = LayoutInflater.from(context);
+
+        mLocalBlogId = localBlogId;
+
+        mStatusColorSpam = context.getResources().getColor(R.color.comment_status_spam);
+        mStatusColorUnapproved = context.getResources().getColor(R.color.comment_status_unapproved);
+
+        mUnselectedColor = context.getResources().getColor(R.color.white);
+        mSelectedColor = context.getResources().getColor(R.color.translucent_grey_lighten_20);
+
+        mStatusTextSpam = context.getResources().getString(R.string.comment_status_spam);
+        mStatusTextUnapproved = context.getResources().getString(R.string.comment_status_unapproved);
+
+        mAvatarSz = context.getResources().getDimensionPixelSize(R.dimen.avatar_sz_medium);
+
+        // endlist indicator height is hard-coded here so that its horz line is in the middle of the fab
+        mEndlistIndicatorHeight = DisplayUtils.dpToPx(context, 74);
+
+        if (preSelectedCommentsId != null) {
+            mSelectedCommentsId.addAll(preSelectedCommentsId);
+            setEnableSelection(true);
+        }
+
+        setHasStableIds(true);
+    }
 
     class CommentHolder extends RecyclerView.ViewHolder
             implements View.OnClickListener, View.OnLongClickListener {
@@ -117,28 +127,6 @@ class CommentAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         public EndListViewHolder(View view) {
             super(view);
         }
-    }
-
-    CommentAdapter(Context context, int localBlogId) {
-        mInflater = LayoutInflater.from(context);
-
-        mLocalBlogId = localBlogId;
-
-        mStatusColorSpam = context.getResources().getColor(R.color.comment_status_spam);
-        mStatusColorUnapproved = context.getResources().getColor(R.color.comment_status_unapproved);
-
-        mUnselectedColor = context.getResources().getColor(R.color.white);
-        mSelectedColor = context.getResources().getColor(R.color.translucent_grey_lighten_20);
-
-        mStatusTextSpam = context.getResources().getString(R.string.comment_status_spam);
-        mStatusTextUnapproved = context.getResources().getString(R.string.comment_status_unapproved);
-
-        mAvatarSz = context.getResources().getDimensionPixelSize(R.dimen.avatar_sz_medium);
-
-        // endlist indicator height is hard-coded here so that its horz line is in the middle of the fab
-        mEndlistIndicatorHeight = DisplayUtils.dpToPx(context, 74);
-
-        setHasStableIds(true);
     }
 
     void setOnDataLoadedListener(OnDataLoadedListener listener) {
@@ -277,7 +265,7 @@ class CommentAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         return getItemCount() == 0;
     }
 
-    void setEnableSelection(boolean enable) {
+    public void setEnableSelection(boolean enable) {
         if (enable == mEnableSelection) return;
 
         mEnableSelection = enable;
@@ -289,8 +277,8 @@ class CommentAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     }
 
     void clearSelectedComments() {
-        if (mSelectedPositions.size() > 0) {
-            mSelectedPositions.clear();
+        if (mSelectedCommentsId.size() > 0) {
+            mSelectedCommentsId.clear();
             notifyDataSetChanged();
             if (mOnSelectedChangeListener != null) {
                 mOnSelectedChangeListener.onSelectedItemsChanged();
@@ -299,34 +287,38 @@ class CommentAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     }
 
     int getSelectedCommentCount() {
-        return mSelectedPositions.size();
+        return mSelectedCommentsId.size();
     }
 
-    CommentList getSelectedComments() {
+    public CommentList getSelectedComments() {
         CommentList comments = new CommentList();
         if (!mEnableSelection) {
             return comments;
         }
 
-        for (Integer position : mSelectedPositions) {
-            if (isPositionValid(position))
-                comments.add(mComments.get(position));
+        for (Long commentId : mSelectedCommentsId) {
+            if (isCommentIdValid(commentId))
+                comments.add(mComments.get(indexOfCommentId(commentId)));
         }
 
         return comments;
     }
 
     private boolean isItemSelected(int position) {
-        return mSelectedPositions.contains(position);
+        Comment comment = getItem(position);
+        return comment != null && mSelectedCommentsId.contains(comment.commentID);
     }
 
     void setItemSelected(int position, boolean isSelected, View view) {
         if (isItemSelected(position) == isSelected) return;
 
+        Comment comment = getItem(position);
+        if (comment == null) return;
+
         if (isSelected) {
-            mSelectedPositions.add(position);
+            mSelectedCommentsId.add(comment.commentID);
         } else {
-            mSelectedPositions.remove(position);
+            mSelectedCommentsId.remove(comment.commentID);
         }
 
         notifyItemChanged(position);
@@ -370,6 +362,10 @@ class CommentAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
     private int indexOfCommentId(long commentId) {
         return mComments.indexOfCommentId(commentId);
+    }
+
+    private boolean isCommentIdValid(long commentId) {
+        return indexOfCommentId(commentId) != -1;
     }
 
     private boolean isPositionValid(int position) {
@@ -459,5 +455,27 @@ class CommentAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
             mIsLoadTaskRunning = false;
         }
+    }
+
+    public HashSet<Long> getSelectedCommentsId() {
+        return mSelectedCommentsId;
+    }
+
+    interface OnDataLoadedListener {
+        void onDataLoaded(boolean isEmpty);
+    }
+
+    interface OnLoadMoreListener {
+        void onLoadMore();
+    }
+
+    interface OnSelectedItemsChangeListener {
+        void onSelectedItemsChanged();
+    }
+
+    interface OnCommentPressedListener {
+        void onCommentPressed(int position, View view);
+
+        void onCommentLongPressed(int position, View view);
     }
 }
