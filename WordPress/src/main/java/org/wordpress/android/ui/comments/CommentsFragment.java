@@ -22,11 +22,6 @@ import de.greenrobot.event.EventBus;
 public class CommentsFragment extends Fragment implements CommentsListFragment.OnCommentSelectedListener {
     private final CommentList mTrashedComments = new CommentList();
 
-    @Override
-    public void onCreate(@Nullable Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-    }
-
     @Nullable
     @Override
     public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
@@ -34,8 +29,7 @@ public class CommentsFragment extends Fragment implements CommentsListFragment.O
     }
 
     private CommentsListFragment getListFragment() {
-        Fragment fragment = getChildFragmentManager().findFragmentByTag(getString(
-                R.string.fragment_tag_comment_list));
+        Fragment fragment = getChildFragmentManager().findFragmentByTag(getString(R.string.fragment_tag_comment_list));
         if (fragment == null) {
             return null;
         }
@@ -198,15 +192,6 @@ public class CommentsFragment extends Fragment implements CommentsListFragment.O
             });
 
             snackbar.show();
-        }
-    }
-
-    @Override
-    public void onSaveInstanceState(Bundle outState) {
-        super.onSaveInstanceState(outState);
-        // https://code.google.com/p/android/issues/detail?id=19917
-        if (outState.isEmpty()) {
-            outState.putBoolean("bug_19917_fix", true);
         }
     }
 }

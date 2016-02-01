@@ -2,6 +2,7 @@ package org.wordpress.android.ui.comments;
 
 import android.content.Context;
 import android.os.AsyncTask;
+import android.support.v4.content.ContextCompat;
 import android.support.v7.widget.RecyclerView;
 import android.text.Html;
 import android.view.LayoutInflater;
@@ -45,7 +46,7 @@ class CommentAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     private final String mStatusTextUnapproved;
     private final int mSelectedColor;
     private final int mUnselectedColor;
-    private final int mEndlistIndicatorHeight;
+    private final int mEndListIndicatorHeight;
 
     private OnDataLoadedListener mOnDataLoadedListener;
     private OnCommentPressedListener mOnCommentPressedListener;
@@ -59,20 +60,21 @@ class CommentAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
         mLocalBlogId = localBlogId;
 
-        mStatusColorSpam = context.getResources().getColor(R.color.comment_status_spam);
-        mStatusColorUnapproved = context.getResources().getColor(R.color.comment_status_unapproved);
+        mStatusColorSpam = ContextCompat.getColor(context, R.color.comment_status_spam);
+        mStatusColorUnapproved = ContextCompat.getColor(context, R.color.comment_status_unapproved);
 
-        mUnselectedColor = context.getResources().getColor(R.color.white);
-        mSelectedColor = context.getResources().getColor(R.color.translucent_grey_lighten_20);
+        mUnselectedColor = ContextCompat.getColor(context, R.color.white);
+        mSelectedColor = ContextCompat.getColor(context, R.color.translucent_grey_lighten_20);
 
         mStatusTextSpam = context.getResources().getString(R.string.comment_status_spam);
         mStatusTextUnapproved = context.getResources().getString(R.string.comment_status_unapproved);
 
         mAvatarSz = context.getResources().getDimensionPixelSize(R.dimen.avatar_sz_medium);
 
-        // endlist indicator height is hard-coded here so that its horz line is in the middle of the fab
-        mEndlistIndicatorHeight = DisplayUtils.dpToPx(context, 74);
+        // EndList indicator height is hard-coded
+        mEndListIndicatorHeight = DisplayUtils.dpToPx(context, 74);
 
+        //we might have selected comments when initializing adapter (ex. after configuration change)
         if (preSelectedCommentsId != null) {
             mSelectedCommentsId.addAll(preSelectedCommentsId);
             setEnableSelection(true);
@@ -157,7 +159,7 @@ class CommentAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
         if (viewType == VIEW_TYPE_ENDLIST_INDICATOR) {
             View view = mInflater.inflate(R.layout.endlist_indicator, parent, false);
-            view.getLayoutParams().height = mEndlistIndicatorHeight;
+            view.getLayoutParams().height = mEndListIndicatorHeight;
             return new EndListViewHolder(view);
         } else {
             View view = mInflater.inflate(R.layout.comment_listitem, parent, false);
@@ -261,7 +263,7 @@ class CommentAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         }
     }
 
-    boolean isEmpty() {
+    public boolean isEmpty() {
         return getItemCount() == 0;
     }
 
@@ -286,7 +288,7 @@ class CommentAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         }
     }
 
-    int getSelectedCommentCount() {
+    public int getSelectedCommentCount() {
         return mSelectedCommentsId.size();
     }
 
@@ -309,7 +311,7 @@ class CommentAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         return comment != null && mSelectedCommentsId.contains(comment.commentID);
     }
 
-    void setItemSelected(int position, boolean isSelected, View view) {
+    public void setItemSelected(int position, boolean isSelected, View view) {
         if (isItemSelected(position) == isSelected) return;
 
         Comment comment = getItem(position);
@@ -335,7 +337,7 @@ class CommentAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         }
     }
 
-    void toggleItemSelected(int position, View view) {
+    public void toggleItemSelected(int position, View view) {
         setItemSelected(position, !isItemSelected(position), view);
     }
 
@@ -356,8 +358,7 @@ class CommentAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     }
 
     public boolean isModeratingCommentId(long commentId) {
-        return mModeratingCommentsIds.size() > 0
-                && mModeratingCommentsIds.contains(commentId);
+        return mModeratingCommentsIds.size() > 0 && mModeratingCommentsIds.contains(commentId);
     }
 
     private int indexOfCommentId(long commentId) {
@@ -372,12 +373,12 @@ class CommentAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         return (position >= 0 && position < mComments.size());
     }
 
-    void replaceComments(CommentList comments) {
+    public void replaceComments(CommentList comments) {
         mComments.replaceComments(comments);
         notifyDataSetChanged();
     }
 
-    void deleteComments(CommentList comments) {
+    public void deleteComments(CommentList comments) {
         mComments.deleteComments(comments);
         notifyDataSetChanged();
         if (mOnDataLoadedListener != null) {
@@ -396,7 +397,7 @@ class CommentAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     /*
      * load comments using an AsyncTask
      */
-    void loadComments() {
+    public void loadComments() {
         if (mIsLoadTaskRunning) {
             AppLog.w(AppLog.T.COMMENTS, "load comments task already active");
         } else {

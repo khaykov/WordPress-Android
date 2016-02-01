@@ -79,20 +79,7 @@ public class CommentsListFragment extends Fragment implements
 
     private static final int COMMENTS_PER_PAGE = 30;
 
-    private boolean hasAdapter() {
-        return (mCommentsAdapter != null);
-    }
-
-    private int getSelectedCommentCount() {
-        return getCommentsAdapter().getSelectedCommentCount();
-    }
-
-    public void removeComment(Comment comment) {
-        if (hasAdapter() && comment != null) {
-            getCommentsAdapter().removeComment(comment);
-        }
-    }
-
+    @SuppressWarnings("unchecked")  //we know what we are passing as Serializable
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -175,6 +162,20 @@ public class CommentsListFragment extends Fragment implements
         if (mRecycler.getAdapter() == null) {
             mRecycler.setAdapter(getCommentsAdapter());
             getCommentsAdapter().loadComments();
+        }
+    }
+
+    private boolean hasAdapter() {
+        return (mCommentsAdapter != null);
+    }
+
+    private int getSelectedCommentCount() {
+        return getCommentsAdapter().getSelectedCommentCount();
+    }
+
+    public void removeComment(Comment comment) {
+        if (hasAdapter() && comment != null) {
+            getCommentsAdapter().removeComment(comment);
         }
     }
 
@@ -437,15 +438,11 @@ public class CommentsListFragment extends Fragment implements
     @Override
     public void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);
-        if (outState.isEmpty()) {
-            outState.putBoolean("bug_19917_fix", true);
-        }
 
         if (mCommentsAdapter != null) {
-            outState.putSerializable(KEY_SELECTED_COMMENTS, mCommentsAdapter.getSelectedCommentsId());
-        } else if (mSelectedComments != null) {
-            outState.putSerializable(KEY_SELECTED_COMMENTS, mSelectedComments);
+            mSelectedComments = mCommentsAdapter.getSelectedCommentsId();
         }
+        outState.putSerializable(KEY_SELECTED_COMMENTS, mSelectedComments);
 
         outState.putBoolean(KEY_AUTO_REFRESHED, mHasAutoRefreshedComments);
         outState.putString(KEY_EMPTY_VIEW_MESSAGE, getEmptyViewMessage());
@@ -536,6 +533,7 @@ public class CommentsListFragment extends Fragment implements
             MenuInflater inflater = actionMode.getMenuInflater();
             inflater.inflate(R.menu.menu_comments_cab, menu);
             mSwipeToRefreshHelper.setEnabled(false);
+            mSelectedComments = null;
             return true;
         }
 
@@ -685,11 +683,9 @@ public class CommentsListFragment extends Fragment implements
             // Hide the empty view if there are already some displayed comments
             hideEmptyView();
 
-            if (mSelectedComments != null && mSelectedComments.size() > 0 && mActionMode == null) {
-                if (getActivity() instanceof AppCompatActivity) {
-                    ((AppCompatActivity) getActivity()).startSupportActionMode(new ActionModeCallback());
-                    updateActionModeTitle();
-                }
+            // After comments are loaded, we should check if some of them are selected and show CAB if necessary
+            if (shouldRestoreCab()) {
+                restoreCab();
             }
         } else if (!mIsUpdatingComments && mEmptyViewMessageType.equals(EmptyViewMessageType.LOADING)) {
             // Change LOADING to NO_CONTENT message
@@ -716,6 +712,17 @@ public class CommentsListFragment extends Fragment implements
                 // must invalidate to ensure onPrepareActionMode is called
                 mActionMode.invalidate();
             }
+        }
+    }
+
+    private boolean shouldRestoreCab() {
+        return mSelectedComments != null && mSelectedComments.size() > 0 && mActionMode == null;
+    }
+
+    private void restoreCab() {
+        if (getActivity() instanceof AppCompatActivity) {
+            ((AppCompatActivity) getActivity()).startSupportActionMode(new ActionModeCallback());
+            updateActionModeTitle();
         }
     }
 
