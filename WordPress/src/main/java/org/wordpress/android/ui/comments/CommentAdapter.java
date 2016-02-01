@@ -3,6 +3,7 @@ package org.wordpress.android.ui.comments;
 import android.content.Context;
 import android.os.AsyncTask;
 import android.support.v4.content.ContextCompat;
+import android.support.v7.widget.CardView;
 import android.support.v7.widget.RecyclerView;
 import android.text.Html;
 import android.view.LayoutInflater;
@@ -92,7 +93,7 @@ class CommentAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         private final WPNetworkImageView imgAvatar;
         private final ImageView imgCheckmark;
         private final View progressBar;
-        private final ViewGroup containerView;
+        private final CardView containerView;
 
         public CommentHolder(View view) {
             super(view);
@@ -103,7 +104,7 @@ class CommentAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
             imgCheckmark = (ImageView) view.findViewById(R.id.image_checkmark);
             imgAvatar = (WPNetworkImageView) view.findViewById(R.id.avatar);
             progressBar = view.findViewById(R.id.moderate_progress);
-            containerView = (ViewGroup) view.findViewById(R.id.layout_container);
+            containerView = (CardView) view.findViewById(R.id.card_view);
 
             itemView.setOnClickListener(this);
             itemView.setOnLongClickListener(this);
@@ -211,11 +212,11 @@ class CommentAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         int checkmarkVisibility;
         if (mEnableSelection && isItemSelected(position)) {
             checkmarkVisibility = View.VISIBLE;
-            holder.containerView.setBackgroundColor(mSelectedColor);
+            holder.containerView.setCardBackgroundColor(mSelectedColor);
         } else {
             checkmarkVisibility = View.GONE;
             holder.imgAvatar.setImageUrl(comment.getAvatarForDisplay(mAvatarSz), WPNetworkImageView.ImageType.AVATAR);
-            holder.containerView.setBackgroundColor(mUnselectedColor);
+            holder.containerView.setCardBackgroundColor(mUnselectedColor);
         }
 
         if (holder.imgCheckmark.getVisibility() != checkmarkVisibility) {

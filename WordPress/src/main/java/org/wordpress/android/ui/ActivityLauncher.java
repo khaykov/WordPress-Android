@@ -132,8 +132,8 @@ public class ActivityLauncher {
         }
     }
 
-    public static void viewCommentDetails(Activity activity, int blogLocalTableId, long commentId, boolean
-            slideInFromRight) {
+    public static void viewCommentDetails(Activity activity, int blogLocalTableId, long commentId,
+                                          boolean slideInFromRight) {
         if (blogLocalTableId == 0 || commentId == 0) return;
 
         Intent intent = new Intent(activity, CommentDetailActivity.class);

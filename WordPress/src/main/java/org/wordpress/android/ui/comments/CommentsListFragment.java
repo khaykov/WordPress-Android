@@ -15,6 +15,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.view.ActionMode;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -44,6 +45,7 @@ import org.xmlrpc.android.ApiHelper;
 import org.xmlrpc.android.ApiHelper.ErrorType;
 import org.xmlrpc.android.XMLRPCFault;
 
+import java.io.Serializable;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -90,6 +92,7 @@ public class CommentsListFragment extends Fragment implements
                     (KEY_EMPTY_VIEW_MESSAGE, EmptyViewMessageType.NO_CONTENT.name()));
 
             mSelectedComments = (HashSet<Long>) savedInstanceState.getSerializable(KEY_SELECTED_COMMENTS);
+            Log.v("", "");
         }
     }
 
@@ -442,7 +445,7 @@ public class CommentsListFragment extends Fragment implements
         if (mCommentsAdapter != null) {
             mSelectedComments = mCommentsAdapter.getSelectedCommentsId();
         }
-        outState.putSerializable(KEY_SELECTED_COMMENTS, mSelectedComments);
+        outState.putSerializable(KEY_SELECTED_COMMENTS, (Serializable) mSelectedComments.clone());
 
         outState.putBoolean(KEY_AUTO_REFRESHED, mHasAutoRefreshedComments);
         outState.putString(KEY_EMPTY_VIEW_MESSAGE, getEmptyViewMessage());
@@ -598,6 +601,12 @@ public class CommentsListFragment extends Fragment implements
             mSwipeToRefreshHelper.setEnabled(true);
             mActionMode = null;
         }
+    }
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        finishActionMode();
     }
 
     @Override
