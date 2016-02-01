@@ -1,6 +1,5 @@
 package org.wordpress.android.ui.comments;
 
-import android.app.Dialog;
 import android.content.Intent;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
@@ -70,14 +69,6 @@ public class CommentsActivity extends DualPaneContentActivity {
     protected void onNewIntent(Intent intent) {
         super.onNewIntent(intent);
         AppLog.d(AppLog.T.COMMENTS, "comment activity new intent");
-    }
-
-    @Override
-    protected Dialog onCreateDialog(int id) {
-        Dialog dialog = CommentDialogs.createCommentDialog(this, id);
-        if (dialog != null)
-            return dialog;
-        return super.onCreateDialog(id);
     }
 
     @Override

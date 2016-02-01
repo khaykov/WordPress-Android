@@ -25,18 +25,11 @@ public class CommentsFragment extends Fragment implements CommentsListFragment.O
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
-        CommentsListFragment fragment = (CommentsListFragment) Fragment.instantiate(getActivity(), CommentsListFragment
-                .class.getName(), null);
-        getChildFragmentManager().beginTransaction().replace(R.id.fragment_container, fragment, getString(
-                R.string.fragment_tag_comment_list))
-                .commit();
     }
 
     @Nullable
     @Override
     public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
-
         return inflater.inflate(R.layout.comments_fragment, container, false);
     }
 
@@ -47,6 +40,19 @@ public class CommentsFragment extends Fragment implements CommentsListFragment.O
             return null;
         }
         return (CommentsListFragment) fragment;
+    }
+
+    @Override
+    public void onActivityCreated(@Nullable Bundle savedInstanceState) {
+        super.onActivityCreated(savedInstanceState);
+        Fragment fragment = getChildFragmentManager().findFragmentByTag(getString(R.string.fragment_tag_comment_list));
+
+        if (fragment == null) {
+            fragment = Fragment.instantiate(getActivity(), CommentsListFragment.class.getName(), null);
+            getChildFragmentManager().beginTransaction()
+                    .replace(R.id.fragment_container, fragment, getString(R.string.fragment_tag_comment_list))
+                    .commit();
+        }
     }
 
     private boolean hasListFragment() {
