@@ -5,7 +5,9 @@ import android.content.DialogInterface;
 import android.graphics.drawable.Drawable;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
+import android.support.v4.app.FragmentManager;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.view.ActionMode;
 import android.support.v7.widget.LinearLayoutManager;
@@ -27,19 +29,22 @@ import org.wordpress.android.models.CommentList;
 import org.wordpress.android.models.CommentStatus;
 import org.wordpress.android.ui.EmptyViewMessageType;
 import org.wordpress.android.util.AppLog;
-import org.wordpress.android.util.DisplayUtils;
+import org.wordpress.android.util.DualPaneHelper;
 import org.wordpress.android.util.NetworkUtils;
 import org.wordpress.android.util.ToastUtils;
 import org.wordpress.android.util.helpers.SwipeToRefreshHelper;
 import org.wordpress.android.util.helpers.SwipeToRefreshHelper.RefreshListener;
 import org.wordpress.android.util.widgets.CustomSwipeRefreshLayout;
 import org.wordpress.android.widgets.RecyclerItemDecoration;
+import org.wordpress.android.widgets.WPProgressDialogFragment;
 import org.xmlrpc.android.ApiHelper;
 import org.xmlrpc.android.ApiHelper.ErrorType;
 import org.xmlrpc.android.XMLRPCFault;
 
 import java.util.HashMap;
 import java.util.Map;
+
+import de.greenrobot.event.EventBus;
 
 public class CommentsListFragment extends Fragment {
 
@@ -49,6 +54,8 @@ public class CommentsListFragment extends Fragment {
 
     private static final String KEY_AUTO_REFRESHED = "has_auto_refreshed";
     private static final String KEY_EMPTY_VIEW_MESSAGE = "empty_view_message";
+
+    private static final String KEY_PROGRESS_DIALOG_DISMISS_REQUESTED = "progress_dialog_dismissal_requested";
 
     private boolean mIsUpdatingComments = false;
     private boolean mCanLoadMoreComments = true;
@@ -171,14 +178,19 @@ public class CommentsListFragment extends Fragment {
     }
 
     @Override
-    public void onActivityCreated(Bundle savedInstanceState) {
-        super.onActivityCreated(savedInstanceState);
+    public void onCreate(@Nullable Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
 
         if (savedInstanceState != null) {
             mHasAutoRefreshedComments = savedInstanceState.getBoolean(KEY_AUTO_REFRESHED, false);
-            mEmptyViewMessageType = EmptyViewMessageType.getEnumFromString(
-                    savedInstanceState.getString(KEY_EMPTY_VIEW_MESSAGE, EmptyViewMessageType.NO_CONTENT.name()));
+            mEmptyViewMessageType = EmptyViewMessageType.getEnumFromString(savedInstanceState.getString
+                    (KEY_EMPTY_VIEW_MESSAGE, EmptyViewMessageType.NO_CONTENT.name()));
         }
+    }
+
+    @Override
+    public void onActivityCreated(Bundle savedInstanceState) {
+        super.onActivityCreated(savedInstanceState);
 
         if (!NetworkUtils.isNetworkAvailable(getActivity())) {
             updateEmptyView(EmptyViewMessageType.NETWORK_ERROR);
@@ -199,10 +211,20 @@ public class CommentsListFragment extends Fragment {
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.comment_list_fragment, container, false);
 
-        int spacingHorizontal = 0;
-        int spacingVertical = DisplayUtils.dpToPx(getActivity(), 1);
         mRecycler = (RecyclerView) view.findViewById(R.id.recycler_view);
         mRecycler.setLayoutManager(new LinearLayoutManager(getActivity()));
+
+        int spacingVertical = getResources().getDimensionPixelSize(R.dimen.reader_card_gutters);
+        int spacingHorizontal;
+
+        if (DualPaneHelper.isInDualPaneMode(getParentFragment())) {
+            //Use normal margin (instead of wide, tablet one) while in dual pane mode.
+            //Setting margin through different resource qualifiers in this case is more complicated and harder to follow.
+            spacingHorizontal = getResources().getDimensionPixelSize(R.dimen.content_margin_normal);
+        } else {
+            spacingHorizontal = getResources().getDimensionPixelSize(R.dimen.content_margin);
+        }
+
         mRecycler.addItemDecoration(new RecyclerItemDecoration(spacingHorizontal, spacingVertical));
 
         mEmptyView = (TextView) view.findViewById(R.id.empty_view);
@@ -242,14 +264,37 @@ public class CommentsListFragment extends Fragment {
         mSwipeToRefreshHelper.setRefreshing(refreshing);
     }
 
-    private void dismissDialog(int id) {
-        if (!isAdded())
-            return;
-        try {
-            getActivity().dismissDialog(id);
-        } catch (IllegalArgumentException e) {
-            // raised when dialog wasn't created
+//    private void dismissDialog(int id) {
+//        if (!isAdded())
+//            return;
+//        try {
+//            getActivity().dismissDialog(id);
+//        } catch (IllegalArgumentException e) {
+//            // raised when dialog wasn't created
+//        }
+//    }
+
+    private String getModerateProgressDialogMessage(CommentStatus commentStatus) {
+        int resourceId;
+
+        switch (commentStatus) {
+            case APPROVED:
+                resourceId = R.string.dlg_approving_comments;
+                break;
+            case UNAPPROVED:
+                resourceId = R.string.dlg_unapproving_comments;
+                break;
+            case SPAM:
+                resourceId = R.string.dlg_spamming_comments;
+                break;
+            case TRASH:
+                resourceId = R.string.dlg_trashing_comments;
+                break;
+            default:
+                return null;
         }
+
+        return getString(resourceId);
     }
 
     private void moderateSelectedComments(final CommentStatus newStatus) {
@@ -265,38 +310,12 @@ public class CommentsListFragment extends Fragment {
 
         if (!NetworkUtils.checkConnection(getActivity())) return;
 
-        final int dlgId;
-        switch (newStatus) {
-            case APPROVED:
-                dlgId = CommentDialogs.ID_COMMENT_DLG_APPROVING;
-                break;
-            case UNAPPROVED:
-                dlgId = CommentDialogs.ID_COMMENT_DLG_UNAPPROVING;
-                break;
-            case SPAM:
-                dlgId = CommentDialogs.ID_COMMENT_DLG_SPAMMING;
-                break;
-            case TRASH:
-                dlgId = CommentDialogs.ID_COMMENT_DLG_TRASHING;
-                break;
-            default:
-                return;
-        }
-        getActivity().showDialog(dlgId);
+        showProgressDialog(getModerateProgressDialogMessage(newStatus));
 
         CommentActions.OnCommentsModeratedListener listener = new CommentActions.OnCommentsModeratedListener() {
             @Override
             public void onCommentsModerated(final CommentList moderatedComments) {
-                if (!isAdded()) return;
-
-                finishActionMode();
-                dismissDialog(dlgId);
-                if (moderatedComments.size() > 0) {
-                    getAdapter().clearSelectedComments();
-                    getAdapter().replaceComments(moderatedComments);
-                } else {
-                    ToastUtils.showToast(getActivity(), R.string.error_moderate_comment);
-                }
+                EventBus.getDefault().postSticky(new CommentsModeratedEvent(moderatedComments, false));
             }
         };
 
@@ -305,6 +324,35 @@ public class CommentsListFragment extends Fragment {
                 updateComments,
                 newStatus,
                 listener);
+    }
+
+    public void onEventMainThread(CommentsModeratedEvent moderatedComments) {
+        if (!isAdded()) return;
+
+        hideProgressDialog();
+        finishActionMode();
+        if (moderatedComments.getComments().size() > 0) {
+            getAdapter().clearSelectedComments();
+            if (moderatedComments.isDeleted()) {
+                getAdapter().deleteComments(moderatedComments.getComments());
+            } else {
+                getAdapter().replaceComments(moderatedComments.getComments());
+            }
+        } else {
+            ToastUtils.showToast(getActivity(), R.string.error_moderate_comment);
+        }
+    }
+
+    private void showProgressDialog(String message) {
+        WPProgressDialogFragment.newInstance(message).show(getChildFragmentManager(), "progress_dialog");
+    }
+
+    private void hideProgressDialog() {
+        FragmentManager fragmentManager = getChildFragmentManager();
+        Fragment progressDialog = fragmentManager.findFragmentByTag("progress_dialog");
+        if (progressDialog != null) {
+            fragmentManager.beginTransaction().remove(progressDialog).commitAllowingStateLoss();
+        }
     }
 
     private void confirmDeleteComments() {
@@ -332,25 +380,16 @@ public class CommentsListFragment extends Fragment {
         if (!NetworkUtils.checkConnection(getActivity())) return;
 
         final CommentList selectedComments = getAdapter().getSelectedComments();
-        getActivity().showDialog(CommentDialogs.ID_COMMENT_DLG_TRASHING);
-        CommentActions.OnCommentsModeratedListener listener = new CommentActions.OnCommentsModeratedListener() {
+        showProgressDialog(getModerateProgressDialogMessage(CommentStatus.TRASH));
+        final CommentActions.OnCommentsModeratedListener listener = new CommentActions.OnCommentsModeratedListener() {
             @Override
             public void onCommentsModerated(final CommentList deletedComments) {
-                if (!isAdded()) return;
-
-                finishActionMode();
-                dismissDialog(CommentDialogs.ID_COMMENT_DLG_TRASHING);
-                if (deletedComments.size() > 0) {
-                    getAdapter().clearSelectedComments();
-                    getAdapter().deleteComments(deletedComments);
-                } else {
-                    ToastUtils.showToast(getActivity(), R.string.error_moderate_comment);
-                }
+                EventBus.getDefault().postSticky(new CommentsModeratedEvent(deletedComments, true));
             }
         };
 
-        CommentActions.moderateComments(
-                WordPress.getCurrentLocalTableBlogId(), selectedComments, CommentStatus.TRASH, listener);
+        CommentActions.moderateComments(WordPress.getCurrentLocalTableBlogId(), selectedComments, CommentStatus.TRASH,
+                listener);
     }
 
     void loadComments() {
@@ -662,6 +701,36 @@ public class CommentsListFragment extends Fragment {
             getAdapter().setEnableSelection(false);
             mSwipeToRefreshHelper.setEnabled(true);
             mActionMode = null;
+        }
+    }
+
+    @Override
+    public void onStart() {
+        super.onStart();
+        EventBus.getDefault().register(this);
+    }
+
+    @Override
+    public void onStop() {
+        EventBus.getDefault().unregister(this);
+        super.onStop();
+    }
+
+    class CommentsModeratedEvent {
+        private CommentList mComments;
+        private boolean mIsDeleted;
+
+        public CommentsModeratedEvent(CommentList comments, boolean isDeleted) {
+            mComments = comments;
+            mIsDeleted = isDeleted;
+        }
+
+        public CommentList getComments() {
+            return mComments;
+        }
+
+        public boolean isDeleted() {
+            return mIsDeleted;
         }
     }
 }
