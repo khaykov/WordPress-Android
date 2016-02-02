@@ -32,7 +32,9 @@ import org.wordpress.android.models.Comment;
 import org.wordpress.android.models.CommentList;
 import org.wordpress.android.models.CommentStatus;
 import org.wordpress.android.ui.EmptyViewMessageType;
+import org.wordpress.android.ui.main.WPMainTabAdapter;
 import org.wordpress.android.util.AppLog;
+import org.wordpress.android.util.CoreEvents;
 import org.wordpress.android.util.DualPaneHelper;
 import org.wordpress.android.util.NetworkUtils;
 import org.wordpress.android.util.ToastUtils;
@@ -227,7 +229,7 @@ public class CommentsListFragment extends Fragment implements
         CommentActions.OnCommentsModeratedListener listener = new CommentActions.OnCommentsModeratedListener() {
             @Override
             public void onCommentsModerated(final CommentList moderatedComments) {
-                EventBus.getDefault().postSticky(new CommentsModeratedEvent(moderatedComments, false));
+                EventBus.getDefault().postSticky(new CommentEvents.BatchCommentsModeratedEvent(moderatedComments, false));
             }
         };
 
@@ -238,7 +240,7 @@ public class CommentsListFragment extends Fragment implements
                 listener);
     }
 
-    public void onEventMainThread(CommentsModeratedEvent moderatedComments) {
+    public void onEventMainThread(CommentEvents.BatchCommentsModeratedEvent moderatedComments) {
         if (!isAdded()) return;
 
         hideProgressDialog();
@@ -252,6 +254,14 @@ public class CommentsListFragment extends Fragment implements
             }
         } else {
             ToastUtils.showToast(getActivity(), R.string.error_moderate_comment);
+        }
+    }
+
+    // dismiss CAB when we switch tabs
+    public void onEventMainThread(CoreEvents.MainViewPagerPageSelected event) {
+        if (!isAdded()) return;
+        if (event != null && event.getPosition() != WPMainTabAdapter.TAB_MY_SITE) {
+            finishActionMode();
         }
     }
 
@@ -279,7 +289,7 @@ public class CommentsListFragment extends Fragment implements
         final CommentActions.OnCommentsModeratedListener listener = new CommentActions.OnCommentsModeratedListener() {
             @Override
             public void onCommentsModerated(final CommentList deletedComments) {
-                EventBus.getDefault().postSticky(new CommentsModeratedEvent(deletedComments, true));
+                EventBus.getDefault().postSticky(new CommentEvents.BatchCommentsModeratedEvent(deletedComments, true));
             }
         };
 
@@ -631,24 +641,6 @@ public class CommentsListFragment extends Fragment implements
         }
 
         return mCommentsAdapter;
-    }
-
-    class CommentsModeratedEvent {
-        private CommentList mComments;
-        private boolean mIsDeleted;
-
-        public CommentsModeratedEvent(CommentList comments, boolean isDeleted) {
-            mComments = comments;
-            mIsDeleted = isDeleted;
-        }
-
-        public CommentList getComments() {
-            return mComments;
-        }
-
-        public boolean isDeleted() {
-            return mIsDeleted;
-        }
     }
 
     @Override

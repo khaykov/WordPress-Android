@@ -94,8 +94,8 @@ public class CommentsFragment extends Fragment implements CommentsListFragment.O
         super.onStop();
     }
 
-    public void onEventMainThread(CommentDetailFragment.CommentChangedEvent event) {
-        EventBus.getDefault().removeStickyEvent(CommentDetailFragment.CommentChangedEvent.class);
+    public void onEventMainThread(CommentEvents.CommentChangedEvent event) {
+        EventBus.getDefault().removeStickyEvent(CommentEvents.CommentChangedEvent.class);
         if (event.getChangedFrom() == CommentActions.ChangedFrom.COMMENT_DETAIL) {
             switch (event.getChangeType()) {
                 case EDITED:
@@ -108,14 +108,14 @@ public class CommentsFragment extends Fragment implements CommentsListFragment.O
         }
     }
 
-    public void onEventMainThread(CommentDetailFragment.CommentModeratedEvent event) {
+    public void onEventMainThread(CommentEvents.CommentModeratedEvent event) {
         if (getListFragment() == null || !getListFragment().isAdded() || getView() == null) return;
 
         final int accountId = event.getAccountId();
         final Comment comment = event.getComment();
         final CommentStatus newStatus = event.getNewStatus();
 
-        EventBus.getDefault().removeStickyEvent(CommentDetailFragment.CommentModeratedEvent.class);
+        EventBus.getDefault().removeStickyEvent(CommentEvents.CommentModeratedEvent.class);
 
         if (newStatus == CommentStatus.APPROVED || newStatus == CommentStatus.UNAPPROVED) {
             getListFragment().setCommentIsModerating(comment.commentID, true);

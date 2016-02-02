@@ -417,7 +417,7 @@ public class CommentDetailFragment extends Fragment implements NotificationFragm
             }
 
             // tell the subscribers that comment have been edited
-            EventBus.getDefault().postSticky(new CommentChangedEvent(ChangedFrom.COMMENT_DETAIL, ChangeType.EDITED));
+            EventBus.getDefault().postSticky(new CommentEvents.CommentChangedEvent(ChangedFrom.COMMENT_DETAIL, ChangeType.EDITED));
         }
     }
 
@@ -730,7 +730,7 @@ public class CommentDetailFragment extends Fragment implements NotificationFragm
             mOnNoteCommentActionListener.onModerateCommentForNote(mNote, newStatus);
             trackModerationFromNotification(newStatus);
         } else {
-            EventBus.getDefault().postSticky(new CommentModeratedEvent(mLocalBlogId, mComment, newStatus));
+            EventBus.getDefault().postSticky(new CommentEvents.CommentModeratedEvent(mLocalBlogId, mComment, newStatus));
             getActivity().finish();
         }
 
@@ -782,7 +782,7 @@ public class CommentDetailFragment extends Fragment implements NotificationFragm
             public void onActionResult(boolean succeeded) {
                 mIsSubmittingReply = false;
                 if (succeeded) {
-                    EventBus.getDefault().postSticky(new CommentChangedEvent(ChangedFrom.COMMENT_DETAIL, ChangeType
+                    EventBus.getDefault().postSticky(new CommentEvents.CommentChangedEvent(ChangedFrom.COMMENT_DETAIL, ChangeType
                             .REPLIED));
                 }
                 if (isAdded()) {
@@ -1157,47 +1157,5 @@ public class CommentDetailFragment extends Fragment implements NotificationFragm
         mRemoteBlogId = remoteBlogId;
     }
 
-    public static class CommentChangedEvent {
 
-        private ChangedFrom mChangedFrom;
-        private ChangeType mChangeType;
-
-        public CommentChangedEvent(ChangedFrom changedFrom, ChangeType changeType) {
-            mChangedFrom = changedFrom;
-            mChangeType = changeType;
-        }
-
-        public ChangedFrom getChangedFrom() {
-            return mChangedFrom;
-        }
-
-        public ChangeType getChangeType() {
-            return mChangeType;
-        }
-    }
-
-    public static class CommentModeratedEvent {
-
-        private int mAccountId;
-        private Comment mComment;
-        private CommentStatus mNewStatus;
-
-        public CommentModeratedEvent(int accountId, Comment comment, CommentStatus newStatus) {
-            mAccountId = accountId;
-            mComment = comment;
-            mNewStatus = newStatus;
-        }
-
-        public int getAccountId() {
-            return mAccountId;
-        }
-
-        public Comment getComment() {
-            return mComment;
-        }
-
-        public CommentStatus getNewStatus() {
-            return mNewStatus;
-        }
-    }
 }

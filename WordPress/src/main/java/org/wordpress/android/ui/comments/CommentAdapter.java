@@ -29,6 +29,20 @@ import java.util.List;
 
 class CommentAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
+    interface OnLoadMoreListener {
+        void onLoadMore();
+    }
+
+    interface OnSelectedItemsChangeListener {
+        void onSelectedItemsChanged();
+    }
+
+    interface OnCommentPressedListener {
+        void onCommentPressed(int position, View view);
+
+        void onCommentLongPressed(int position, View view);
+    }
+
     private static final int VIEW_TYPE_COMMENT = 0;
     private static final int VIEW_TYPE_ENDLIST_INDICATOR = 1;
 
@@ -55,34 +69,6 @@ class CommentAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     private OnSelectedItemsChangeListener mOnSelectedChangeListener;
 
     private boolean mEnableSelection;
-
-    public CommentAdapter(Context context, int localBlogId, HashSet<Long> preSelectedCommentsId) {
-        mInflater = LayoutInflater.from(context);
-
-        mLocalBlogId = localBlogId;
-
-        mStatusColorSpam = ContextCompat.getColor(context, R.color.comment_status_spam);
-        mStatusColorUnapproved = ContextCompat.getColor(context, R.color.comment_status_unapproved);
-
-        mUnselectedColor = ContextCompat.getColor(context, R.color.white);
-        mSelectedColor = ContextCompat.getColor(context, R.color.translucent_grey_lighten_20);
-
-        mStatusTextSpam = context.getResources().getString(R.string.comment_status_spam);
-        mStatusTextUnapproved = context.getResources().getString(R.string.comment_status_unapproved);
-
-        mAvatarSz = context.getResources().getDimensionPixelSize(R.dimen.avatar_sz_medium);
-
-        // EndList indicator height is hard-coded
-        mEndListIndicatorHeight = DisplayUtils.dpToPx(context, 74);
-
-        //we might have selected comments when initializing adapter (ex. after configuration change)
-        if (preSelectedCommentsId != null) {
-            mSelectedCommentsId.addAll(preSelectedCommentsId);
-            setEnableSelection(true);
-        }
-
-        setHasStableIds(true);
-    }
 
     class CommentHolder extends RecyclerView.ViewHolder
             implements View.OnClickListener, View.OnLongClickListener {
@@ -130,6 +116,34 @@ class CommentAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         public EndListViewHolder(View view) {
             super(view);
         }
+    }
+
+    public CommentAdapter(Context context, int localBlogId, HashSet<Long> preSelectedCommentsId) {
+        mInflater = LayoutInflater.from(context);
+
+        mLocalBlogId = localBlogId;
+
+        mStatusColorSpam = ContextCompat.getColor(context, R.color.comment_status_spam);
+        mStatusColorUnapproved = ContextCompat.getColor(context, R.color.comment_status_unapproved);
+
+        mUnselectedColor = ContextCompat.getColor(context, R.color.white);
+        mSelectedColor = ContextCompat.getColor(context, R.color.translucent_grey_lighten_20);
+
+        mStatusTextSpam = context.getResources().getString(R.string.comment_status_spam);
+        mStatusTextUnapproved = context.getResources().getString(R.string.comment_status_unapproved);
+
+        mAvatarSz = context.getResources().getDimensionPixelSize(R.dimen.avatar_sz_medium);
+
+        // EndList indicator height is hard-coded
+        mEndListIndicatorHeight = DisplayUtils.dpToPx(context, 74);
+
+        //we might have selected comments when initializing adapter (ex. after configuration change)
+        if (preSelectedCommentsId != null) {
+            mSelectedCommentsId.addAll(preSelectedCommentsId);
+            setEnableSelection(true);
+        }
+
+        setHasStableIds(true);
     }
 
     void setOnDataLoadedListener(OnDataLoadedListener listener) {
@@ -465,19 +479,5 @@ class CommentAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
     interface OnDataLoadedListener {
         void onDataLoaded(boolean isEmpty);
-    }
-
-    interface OnLoadMoreListener {
-        void onLoadMore();
-    }
-
-    interface OnSelectedItemsChangeListener {
-        void onSelectedItemsChanged();
-    }
-
-    interface OnCommentPressedListener {
-        void onCommentPressed(int position, View view);
-
-        void onCommentLongPressed(int position, View view);
     }
 }

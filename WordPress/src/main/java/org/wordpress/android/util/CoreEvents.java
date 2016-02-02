@@ -15,4 +15,14 @@ public class CoreEvents {
             mXOffset = xOffset;
         }
     }
+    public static class MainViewPagerPageSelected {
+        public final int mPosition;
+        public MainViewPagerPageSelected(int position) {
+            mPosition = position;
+        }
+
+        public int getPosition() {
+            return mPosition;
+        }
+    }
 }
