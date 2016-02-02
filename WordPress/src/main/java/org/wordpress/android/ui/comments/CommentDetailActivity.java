@@ -17,7 +17,7 @@ import org.wordpress.android.util.AppLog;
 import org.wordpress.android.util.ToastUtils;
 
 /**
- * Host for {@link CommentDetailFragment}. Currently only called from  {@link CommentsFragment}.
+ * Host for {@link CommentDetailFragment}. Currently only called from  {@link CommentsListFragment}.
  */
 public class CommentDetailActivity extends AppCompatActivity {
 

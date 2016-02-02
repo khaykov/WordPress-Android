@@ -67,4 +67,29 @@ class CommentEvents {
             return mNewStatus;
         }
     }
+
+
+    public static class CommentModerationFinishedEvent {
+        private boolean mIsSuccess;
+        private boolean mIsCommentsRefreshRequired;
+        private long mCommentId;
+
+        public CommentModerationFinishedEvent(boolean isSuccess, boolean isCommentsRefreshRequired, long commentId) {
+            mIsSuccess = isSuccess;
+            mIsCommentsRefreshRequired = isCommentsRefreshRequired;
+            mCommentId = commentId;
+        }
+
+        public boolean isSuccess() {
+            return mIsSuccess;
+        }
+
+        public boolean isCommentsRefreshRequired() {
+            return mIsCommentsRefreshRequired;
+        }
+
+        public long getCommentId() {
+            return mCommentId;
+        }
+    }
 }

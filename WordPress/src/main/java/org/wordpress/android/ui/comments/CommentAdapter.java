@@ -473,4 +473,12 @@ class CommentAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     public HashSet<Long> getSelectedCommentsId() {
         return mSelectedCommentsId;
     }
+
+    public List<Long> getModeratedCommentId() {
+        return mModeratingCommentsIds;
+    }
+
+    public boolean hasModeratedComments() {
+        return mModeratingCommentsIds.size() > 0;
+    }
 }

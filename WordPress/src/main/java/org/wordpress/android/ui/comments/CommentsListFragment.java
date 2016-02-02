@@ -64,6 +64,7 @@ public class CommentsListFragment extends Fragment implements
     private static final String KEY_AUTO_REFRESHED = "has_auto_refreshed";
     private static final String KEY_EMPTY_VIEW_MESSAGE = "empty_view_message";
     private static final String KEY_SELECTED_COMMENTS = "selected_comments";
+    private static final String KEY_MODERATED_COMMENT_ID = "moderated_comment_id";
 
     private final CommentList mTrashedComments = new CommentList();
 
@@ -73,6 +74,8 @@ public class CommentsListFragment extends Fragment implements
     private boolean mCanLoadMoreComments = true;
     boolean mHasAutoRefreshedComments = false;
     private boolean mHasCheckedDeletedComments = false;
+
+    private long mRetainedModeratedCommentId = -1;
 
     private ProgressBar mProgressLoadMore;
     private SwipeToRefreshHelper mSwipeToRefreshHelper;
@@ -97,6 +100,7 @@ public class CommentsListFragment extends Fragment implements
                     savedInstanceState.getString(KEY_EMPTY_VIEW_MESSAGE, EmptyViewMessageType.NO_CONTENT.name()));
 
             mSelectedComments = (HashSet<Long>) savedInstanceState.getSerializable(KEY_SELECTED_COMMENTS);
+            mRetainedModeratedCommentId = savedInstanceState.getLong(KEY_MODERATED_COMMENT_ID);
         }
     }
 
@@ -463,6 +467,10 @@ public class CommentsListFragment extends Fragment implements
 
         if (hasAdapter()) {
             mSelectedComments = getCommentsAdapter().getSelectedCommentsId();
+
+            if (getCommentsAdapter().hasModeratedComments()) {
+                mRetainedModeratedCommentId = getCommentsAdapter().getModeratedCommentId().get(0);
+            }
         }
 
         if (mSelectedComments != null) {
@@ -470,6 +478,7 @@ public class CommentsListFragment extends Fragment implements
             outState.putSerializable(KEY_SELECTED_COMMENTS, (Serializable) mSelectedComments.clone());
         }
 
+        outState.putLong(KEY_MODERATED_COMMENT_ID, mRetainedModeratedCommentId);
         outState.putBoolean(KEY_AUTO_REFRESHED, mHasAutoRefreshedComments);
         outState.putString(KEY_EMPTY_VIEW_MESSAGE, getEmptyViewMessage());
     }
@@ -686,6 +695,11 @@ public class CommentsListFragment extends Fragment implements
             if (EventBus.getDefault().getStickyEvent(CommentEvents.CommentModeratedEvent.class) != null) {
                 onEventMainThread(EventBus.getDefault().getStickyEvent(CommentEvents.CommentModeratedEvent.class));
             }
+
+            if (mRetainedModeratedCommentId != -1) {
+                setCommentIsModerating(mRetainedModeratedCommentId, true);
+                mRetainedModeratedCommentId = -1;
+            }
         } else if (!mIsUpdatingComments && mEmptyViewMessageType.equals(EmptyViewMessageType.LOADING)) {
             // Change LOADING to NO_CONTENT message
             updateEmptyView(EmptyViewMessageType.NO_CONTENT);
@@ -790,19 +804,10 @@ public class CommentsListFragment extends Fragment implements
                     new CommentActions.CommentActionListener() {
                         @Override
                         public void onActionResult(boolean succeeded) {
-                            if (!isAdded()) {
-                                return;
-                            }
-
-                            setCommentIsModerating(comment.commentID, false);
-
-                            if (succeeded) {
-                                loadComments();
-                            } else {
-                                ToastUtils.showToast(getActivity(),
-                                        R.string.error_moderate_comment,
-                                        ToastUtils.Duration.LONG
-                                );
+                            if (EventBus.getDefault().hasSubscriberForEvent(CommentEvents.CommentModerationFinishedEvent
+                                    .class)) {
+                                EventBus.getDefault().postSticky(new CommentEvents.CommentModerationFinishedEvent
+                                        (succeeded, true, comment.commentID));
                             }
                         }
                     });
@@ -841,17 +846,11 @@ public class CommentsListFragment extends Fragment implements
                             () {
                         @Override
                         public void onActionResult(boolean succeeded) {
-                            if (!isAdded()) {
-                                return;
-                            }
-                            setCommentIsModerating(comment.commentID, false);
-                            if (!succeeded) {
-                                // show comment again upon error
-                                loadComments();
-                                ToastUtils.showToast(getActivity(),
-                                        R.string.error_moderate_comment,
-                                        ToastUtils.Duration.LONG
-                                );
+
+                            if (EventBus.getDefault().hasSubscriberForEvent(CommentEvents.CommentModerationFinishedEvent
+                                    .class)) {
+                                EventBus.getDefault().postSticky(new CommentEvents.CommentModerationFinishedEvent
+                                        (succeeded, false, comment.commentID));
                             }
                         }
                     });
@@ -873,6 +872,25 @@ public class CommentsListFragment extends Fragment implements
                     loadComments();
                     break;
             }
+        }
+    }
+
+    public void onEventMainThread(CommentEvents.CommentModerationFinishedEvent event) {
+        if (!isAdded()) return;
+
+        EventBus.getDefault().removeStickyEvent(CommentEvents.CommentModerationFinishedEvent.class);
+
+        setCommentIsModerating(event.getCommentId(), false);
+
+        if (!event.isSuccess()) {
+            ToastUtils.showToast(getActivity(),
+                    R.string.error_moderate_comment,
+                    ToastUtils.Duration.LONG
+            );
+        }
+
+        if (event.isCommentsRefreshRequired()) {
+            loadComments();
         }
     }
 }
