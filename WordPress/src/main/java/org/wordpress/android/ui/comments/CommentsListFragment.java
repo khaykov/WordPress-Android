@@ -8,6 +8,7 @@ import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
+import android.support.design.widget.Snackbar;
 import android.support.v4.app.DialogFragment;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
@@ -30,6 +31,7 @@ import org.wordpress.android.models.Blog;
 import org.wordpress.android.models.Comment;
 import org.wordpress.android.models.CommentList;
 import org.wordpress.android.models.CommentStatus;
+import org.wordpress.android.ui.ActivityLauncher;
 import org.wordpress.android.ui.EmptyViewMessageType;
 import org.wordpress.android.ui.main.WPMainTabAdapter;
 import org.wordpress.android.util.AppLog;
@@ -59,13 +61,11 @@ public class CommentsListFragment extends Fragment implements
         CommentAdapter.OnSelectedItemsChangeListener,
         CommentAdapter.OnCommentPressedListener {
 
-    interface OnCommentSelectedListener {
-        void onCommentSelected(long commentId);
-    }
-
     private static final String KEY_AUTO_REFRESHED = "has_auto_refreshed";
     private static final String KEY_EMPTY_VIEW_MESSAGE = "empty_view_message";
     private static final String KEY_SELECTED_COMMENTS = "selected_comments";
+
+    private final CommentList mTrashedComments = new CommentList();
 
     private HashSet<Long> mSelectedComments;
 
@@ -129,7 +129,7 @@ public class CommentsListFragment extends Fragment implements
         int spacingVertical = getResources().getDimensionPixelSize(R.dimen.reader_card_gutters);
         int spacingHorizontal;
 
-        if (DualPaneHelper.isInDualPaneMode(getParentFragment())) {
+        if (DualPaneHelper.isInDualPaneMode(this)) {
             //Use normal margin (instead of wide, tablet one) while in dual pane mode.
             //Setting margin through different resource qualifiers in this case is more complicated and harder to follow.
             spacingHorizontal = getResources().getDimensionPixelSize(R.dimen.content_margin_normal);
@@ -185,6 +185,10 @@ public class CommentsListFragment extends Fragment implements
     public void removeComment(Comment comment) {
         if (hasAdapter() && comment != null) {
             getCommentsAdapter().removeComment(comment);
+
+            if (getCommentsAdapter().getItemCount() == 0) {
+                updateEmptyView(EmptyViewMessageType.NO_CONTENT);
+            }
         }
     }
 
@@ -304,7 +308,9 @@ public class CommentsListFragment extends Fragment implements
         // this is called from CommentsActivity when a comment was changed in the detail view,
         // and the change will already be in SQLite so simply reload the comment adapter
         // to show the change
-        getCommentsAdapter().loadComments();
+        if (hasAdapter()) {
+            getCommentsAdapter().loadComments();
+        }
     }
 
     /*
@@ -475,9 +481,9 @@ public class CommentsListFragment extends Fragment implements
     }
 
     private void updateEmptyView(EmptyViewMessageType emptyViewMessageType) {
-        if (!isAdded() || !hasAdapter() || mEmptyView == null) return;
+        if (!isAdded() || mEmptyView == null) return;
 
-        if (getCommentsAdapter().isEmpty()) {
+        if (!hasAdapter() || getCommentsAdapter().isEmpty()) {
             int stringId = 0;
 
             switch (emptyViewMessageType) {
@@ -640,9 +646,8 @@ public class CommentsListFragment extends Fragment implements
         if (mActionMode == null) {
             if (!getCommentsAdapter().isModeratingCommentId(comment.commentID)) {
                 mRecycler.invalidate();
-                if (getParentFragment() != null && getParentFragment() instanceof OnCommentSelectedListener) {
-                    ((OnCommentSelectedListener) getParentFragment()).onCommentSelected(comment.commentID);
-                }
+                ActivityLauncher.viewCommentDetails(getActivity(), WordPress.getCurrentLocalTableBlogId(), comment.commentID,
+                        DualPaneHelper.isInDualPaneMode(this));
             }
         } else {
             getCommentsAdapter().toggleItemSelected(position, view);
@@ -675,6 +680,11 @@ public class CommentsListFragment extends Fragment implements
             // After comments are loaded, we should check if some of them are selected and show CAB if necessary
             if (shouldRestoreCab()) {
                 restoreCab();
+            }
+
+            //if the fragment was destroyed, we will have to moderate comments after adapter have been reinitialized
+            if (EventBus.getDefault().getStickyEvent(CommentEvents.CommentModeratedEvent.class) != null) {
+                onEventMainThread(EventBus.getDefault().getStickyEvent(CommentEvents.CommentModeratedEvent.class));
             }
         } else if (!mIsUpdatingComments && mEmptyViewMessageType.equals(EmptyViewMessageType.LOADING)) {
             // Change LOADING to NO_CONTENT message
@@ -756,12 +766,113 @@ public class CommentsListFragment extends Fragment implements
     @Override
     public void onStart() {
         super.onStart();
-        EventBus.getDefault().register(this);
+        EventBus.getDefault().registerSticky(this);
     }
 
     @Override
     public void onStop() {
         EventBus.getDefault().unregister(this);
         super.onStop();
+    }
+
+    public void onEventMainThread(CommentEvents.CommentModeratedEvent event) {
+        if (!hasAdapter() || !isAdded() || getView() == null) return;
+
+        final int accountId = event.getAccountId();
+        final Comment comment = event.getComment();
+        final CommentStatus newStatus = event.getNewStatus();
+
+        EventBus.getDefault().removeStickyEvent(CommentEvents.CommentModeratedEvent.class);
+
+        if (newStatus == CommentStatus.APPROVED || newStatus == CommentStatus.UNAPPROVED) {
+            setCommentIsModerating(comment.commentID, true);
+            CommentActions.moderateComment(accountId, comment, newStatus,
+                    new CommentActions.CommentActionListener() {
+                        @Override
+                        public void onActionResult(boolean succeeded) {
+                            if (!isAdded()) {
+                                return;
+                            }
+
+                            setCommentIsModerating(comment.commentID, false);
+
+                            if (succeeded) {
+                                loadComments();
+                            } else {
+                                ToastUtils.showToast(getActivity(),
+                                        R.string.error_moderate_comment,
+                                        ToastUtils.Duration.LONG
+                                );
+                            }
+                        }
+                    });
+        } else if (newStatus == CommentStatus.SPAM || newStatus == CommentStatus.TRASH) {
+            mTrashedComments.add(comment);
+            removeComment(comment);
+            setCommentIsModerating(comment.commentID, true);
+
+            String message = (newStatus == CommentStatus.TRASH ? getString(R.string.comment_trashed) : getString(R.string
+                    .comment_spammed));
+            View.OnClickListener undoListener = new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    mTrashedComments.remove(comment);
+                    setCommentIsModerating(comment.commentID, false);
+                    loadComments();
+                }
+            };
+
+            Snackbar snackbar = Snackbar.make(getView(), message, Snackbar.LENGTH_LONG)
+                    .setAction(R.string.undo, undoListener);
+
+            // do the actual moderation once the undo bar has been hidden
+            snackbar.setCallback(new Snackbar.Callback() {
+                @Override
+                public void onDismissed(Snackbar snackbar, int event) {
+                    super.onDismissed(snackbar, event);
+
+                    // comment will no longer exist in moderating list if action was undone
+                    if (!mTrashedComments.contains(comment)) {
+                        return;
+                    }
+                    mTrashedComments.remove(comment);
+
+                    CommentActions.moderateComment(accountId, comment, newStatus, new CommentActions.CommentActionListener
+                            () {
+                        @Override
+                        public void onActionResult(boolean succeeded) {
+                            if (!isAdded()) {
+                                return;
+                            }
+                            setCommentIsModerating(comment.commentID, false);
+                            if (!succeeded) {
+                                // show comment again upon error
+                                loadComments();
+                                ToastUtils.showToast(getActivity(),
+                                        R.string.error_moderate_comment,
+                                        ToastUtils.Duration.LONG
+                                );
+                            }
+                        }
+                    });
+                }
+            });
+
+            snackbar.show();
+        }
+    }
+
+    public void onEventMainThread(CommentEvents.CommentChangedEvent event) {
+        EventBus.getDefault().removeStickyEvent(CommentEvents.CommentChangedEvent.class);
+        if (event.getChangedFrom() == CommentActions.ChangedFrom.COMMENT_DETAIL) {
+            switch (event.getChangeType()) {
+                case EDITED:
+                    loadComments();
+                    break;
+                case REPLIED:
+                    loadComments();
+                    break;
+            }
+        }
     }
 }

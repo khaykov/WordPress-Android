@@ -37,7 +37,7 @@ public class CommentsActivity extends DualPaneContentActivity {
         Fragment fragment = fragmentManager.findFragmentByTag(getContentFragmentTag());
 
         if (fragment == null) {
-            fragment = Fragment.instantiate(this, CommentsFragment.class.getName(), getIntent().getExtras());
+            fragment = Fragment.instantiate(this, CommentsListFragment.class.getName(), getIntent().getExtras());
             fragment.setInitialSavedState(getFragmentSavedState());
             fragmentManager.beginTransaction().replace(R.id.fragment_container, fragment, getContentFragmentTag())
                     .commit();

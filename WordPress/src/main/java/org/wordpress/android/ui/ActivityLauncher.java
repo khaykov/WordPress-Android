@@ -21,7 +21,7 @@ import org.wordpress.android.ui.accounts.NewBlogActivity;
 import org.wordpress.android.ui.accounts.SignInActivity;
 import org.wordpress.android.ui.comments.CommentDetailActivity;
 import org.wordpress.android.ui.comments.CommentsActivity;
-import org.wordpress.android.ui.comments.CommentsFragment;
+import org.wordpress.android.ui.comments.CommentsListFragment;
 import org.wordpress.android.ui.main.SitePickerActivity;
 import org.wordpress.android.ui.media.MediaBrowserActivity;
 import org.wordpress.android.ui.media.WordPressMediaUtils;
@@ -121,8 +121,8 @@ public class ActivityLauncher {
 
         if (dualPaneHost != null) {
             showDualPaneContent(context,
-                    CommentsFragment.class,
-                    context.getString(R.string.fragment_tag_comments),
+                    CommentsListFragment.class,
+                    context.getString(R.string.fragment_tag_comment_list),
                     intent,
                     dualPaneHost,
                     AnalyticsTracker.Stat.OPENED_COMMENTS);
