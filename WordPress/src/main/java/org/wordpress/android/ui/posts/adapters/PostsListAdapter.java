@@ -93,7 +93,9 @@ public class PostsListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHold
         mPhotonHeight = context.getResources().getDimensionPixelSize(R.dimen.reader_featured_image_height);
 
         // endlist indicator height is hard-coded here so that its horz line is in the middle of the fab
-        mEndlistIndicatorHeight = DisplayUtils.dpToPx(context, mIsPage ? 82 : 74);
+        mEndlistIndicatorHeight = mIsPage ?
+                context.getResources().getDimensionPixelSize(R.dimen.endlist_indicator_height_page) :
+                context.getResources().getDimensionPixelSize(R.dimen.endlist_indicator_height_default);
 
         // on larger displays we can always show all buttons
         mAlwaysShowAllButtons = (displayWidth >= 1080);
@@ -674,5 +676,4 @@ public class PostsListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHold
             }
         }
     }
-
 }

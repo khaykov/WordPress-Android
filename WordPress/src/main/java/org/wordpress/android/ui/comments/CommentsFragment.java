@@ -20,6 +20,7 @@ import org.wordpress.android.util.ToastUtils;
 import de.greenrobot.event.EventBus;
 
 public class CommentsFragment extends Fragment implements CommentsListFragment.OnCommentSelectedListener {
+
     private final CommentList mTrashedComments = new CommentList();
 
     @Nullable
@@ -28,18 +29,10 @@ public class CommentsFragment extends Fragment implements CommentsListFragment.O
         return inflater.inflate(R.layout.comments_fragment, container, false);
     }
 
-    private CommentsListFragment getListFragment() {
-        Fragment fragment = getChildFragmentManager().findFragmentByTag(getString(R.string.fragment_tag_comment_list));
-        if (fragment == null) {
-            return null;
-        }
-        return (CommentsListFragment) fragment;
-    }
-
     @Override
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
-        Fragment fragment = getChildFragmentManager().findFragmentByTag(getString(R.string.fragment_tag_comment_list));
+        Fragment fragment = getListFragment();
 
         if (fragment == null) {
             fragment = Fragment.instantiate(getActivity(), CommentsListFragment.class.getName(), null);
@@ -47,6 +40,14 @@ public class CommentsFragment extends Fragment implements CommentsListFragment.O
                     .replace(R.id.fragment_container, fragment, getString(R.string.fragment_tag_comment_list))
                     .commit();
         }
+    }
+
+    private CommentsListFragment getListFragment() {
+        Fragment fragment = getChildFragmentManager().findFragmentByTag(getString(R.string.fragment_tag_comment_list));
+        if (fragment == null) {
+            return null;
+        }
+        return (CommentsListFragment) fragment;
     }
 
     private boolean hasListFragment() {

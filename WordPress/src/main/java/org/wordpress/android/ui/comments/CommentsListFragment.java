@@ -15,7 +15,6 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.view.ActionMode;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -60,6 +59,10 @@ public class CommentsListFragment extends Fragment implements
         CommentAdapter.OnSelectedItemsChangeListener,
         CommentAdapter.OnCommentPressedListener {
 
+    interface OnCommentSelectedListener {
+        void onCommentSelected(long commentId);
+    }
+
     private static final String KEY_AUTO_REFRESHED = "has_auto_refreshed";
     private static final String KEY_EMPTY_VIEW_MESSAGE = "empty_view_message";
     private static final String KEY_SELECTED_COMMENTS = "selected_comments";
@@ -90,11 +93,10 @@ public class CommentsListFragment extends Fragment implements
 
         if (savedInstanceState != null) {
             mHasAutoRefreshedComments = savedInstanceState.getBoolean(KEY_AUTO_REFRESHED, false);
-            mEmptyViewMessageType = EmptyViewMessageType.getEnumFromString(savedInstanceState.getString
-                    (KEY_EMPTY_VIEW_MESSAGE, EmptyViewMessageType.NO_CONTENT.name()));
+            mEmptyViewMessageType = EmptyViewMessageType.getEnumFromString(
+                    savedInstanceState.getString(KEY_EMPTY_VIEW_MESSAGE, EmptyViewMessageType.NO_CONTENT.name()));
 
             mSelectedComments = (HashSet<Long>) savedInstanceState.getSerializable(KEY_SELECTED_COMMENTS);
-            Log.v("", "");
         }
     }
 
@@ -175,6 +177,8 @@ public class CommentsListFragment extends Fragment implements
     }
 
     private int getSelectedCommentCount() {
+        if (!hasAdapter()) return 0;
+
         return getCommentsAdapter().getSelectedCommentCount();
     }
 
@@ -259,8 +263,7 @@ public class CommentsListFragment extends Fragment implements
 
     // dismiss CAB when we switch tabs
     public void onEventMainThread(CoreEvents.MainViewPagerPageSelected event) {
-        if (!isAdded()) return;
-        if (event != null && event.getPosition() != WPMainTabAdapter.TAB_MY_SITE) {
+        if (isAdded() && event != null && event.getPosition() != WPMainTabAdapter.TAB_MY_SITE) {
             finishActionMode();
         }
     }
@@ -286,7 +289,7 @@ public class CommentsListFragment extends Fragment implements
 
         final CommentList selectedComments = getCommentsAdapter().getSelectedComments();
         showProgressDialog(getModerateProgressDialogMessage(CommentStatus.TRASH));
-        final CommentActions.OnCommentsModeratedListener listener = new CommentActions.OnCommentsModeratedListener() {
+        CommentActions.OnCommentsModeratedListener listener = new CommentActions.OnCommentsModeratedListener() {
             @Override
             public void onCommentsModerated(final CommentList deletedComments) {
                 EventBus.getDefault().postSticky(new CommentEvents.BatchCommentsModeratedEvent(deletedComments, true));
@@ -452,10 +455,14 @@ public class CommentsListFragment extends Fragment implements
     public void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);
 
-        if (mCommentsAdapter != null) {
-            mSelectedComments = mCommentsAdapter.getSelectedCommentsId();
+        if (hasAdapter()) {
+            mSelectedComments = getCommentsAdapter().getSelectedCommentsId();
         }
-        outState.putSerializable(KEY_SELECTED_COMMENTS, (Serializable) mSelectedComments.clone());
+
+        if (mSelectedComments != null) {
+            //we need to make sure that we pass exact state of mSelectedComments at the time of onSaveInstanceState
+            outState.putSerializable(KEY_SELECTED_COMMENTS, (Serializable) mSelectedComments.clone());
+        }
 
         outState.putBoolean(KEY_AUTO_REFRESHED, mHasAutoRefreshedComments);
         outState.putString(KEY_EMPTY_VIEW_MESSAGE, getEmptyViewMessage());
@@ -534,7 +541,6 @@ public class CommentsListFragment extends Fragment implements
 
     private void finishActionMode() {
         if (mActionMode != null) {
-            mSelectedComments = null;
             mActionMode.finish();
         }
     }
@@ -611,24 +617,6 @@ public class CommentsListFragment extends Fragment implements
             mSwipeToRefreshHelper.setEnabled(true);
             mActionMode = null;
         }
-    }
-
-    @Override
-    public void onDestroy() {
-        super.onDestroy();
-        finishActionMode();
-    }
-
-    @Override
-    public void onStart() {
-        super.onStart();
-        EventBus.getDefault().register(this);
-    }
-
-    @Override
-    public void onStop() {
-        EventBus.getDefault().unregister(this);
-        super.onStop();
     }
 
     private CommentAdapter getCommentsAdapter() {
@@ -727,10 +715,9 @@ public class CommentsListFragment extends Fragment implements
         }
     }
 
-    interface OnCommentSelectedListener {
-        void onCommentSelected(long commentId);
-    }
-
+    /**
+     * Internal dialog used to confirm dialog deletion.
+     */
     public static class DeleteCommentsConfirmationDialog extends DialogFragment {
         static final String TAG = "delete_comments_dialog";
 
@@ -744,7 +731,9 @@ public class CommentsListFragment extends Fragment implements
             builder.setPositiveButton(R.string.trash_yes, new DialogInterface.OnClickListener() {
                 @Override
                 public void onClick(DialogInterface dialog, int id) {
-                    ((CommentsListFragment) getParentFragment()).deleteSelectedComments();
+                    if (getParentFragment() != null && getParentFragment() instanceof CommentsListFragment) {
+                        ((CommentsListFragment) getParentFragment()).deleteSelectedComments();
+                    }
                 }
             });
             builder.setNegativeButton(R.string.trash_no, new DialogInterface.OnClickListener() {
@@ -755,5 +744,24 @@ public class CommentsListFragment extends Fragment implements
             });
             return builder.create();
         }
+    }
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        //dismiss CAB on destroy. It will be recreated if necessary.
+        finishActionMode();
+    }
+
+    @Override
+    public void onStart() {
+        super.onStart();
+        EventBus.getDefault().register(this);
+    }
+
+    @Override
+    public void onStop() {
+        EventBus.getDefault().unregister(this);
+        super.onStop();
     }
 }

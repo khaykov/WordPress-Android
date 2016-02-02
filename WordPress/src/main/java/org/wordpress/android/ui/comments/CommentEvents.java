@@ -4,7 +4,7 @@ import org.wordpress.android.models.Comment;
 import org.wordpress.android.models.CommentList;
 import org.wordpress.android.models.CommentStatus;
 
-public class CommentEvents {
+class CommentEvents {
 
     public static class BatchCommentsModeratedEvent {
         private CommentList mComments;

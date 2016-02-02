@@ -20,7 +20,6 @@ import org.wordpress.android.models.CommentList;
 import org.wordpress.android.util.AniUtils;
 import org.wordpress.android.util.AppLog;
 import org.wordpress.android.util.DateTimeUtils;
-import org.wordpress.android.util.DisplayUtils;
 import org.wordpress.android.widgets.WPNetworkImageView;
 
 import java.util.ArrayList;
@@ -28,6 +27,9 @@ import java.util.HashSet;
 import java.util.List;
 
 class CommentAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
+    interface OnDataLoadedListener {
+        void onDataLoaded(boolean isEmpty);
+    }
 
     interface OnLoadMoreListener {
         void onLoadMore();
@@ -61,7 +63,6 @@ class CommentAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     private final String mStatusTextUnapproved;
     private final int mSelectedColor;
     private final int mUnselectedColor;
-    private final int mEndListIndicatorHeight;
 
     private OnDataLoadedListener mOnDataLoadedListener;
     private OnCommentPressedListener mOnCommentPressedListener;
@@ -134,10 +135,7 @@ class CommentAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
         mAvatarSz = context.getResources().getDimensionPixelSize(R.dimen.avatar_sz_medium);
 
-        // EndList indicator height is hard-coded
-        mEndListIndicatorHeight = DisplayUtils.dpToPx(context, 74);
-
-        //we might have selected comments when initializing adapter (ex. after configuration change)
+        //we might have preselected comments when initializing adapter (ex. after configuration change)
         if (preSelectedCommentsId != null) {
             mSelectedCommentsId.addAll(preSelectedCommentsId);
             setEnableSelection(true);
@@ -174,7 +172,6 @@ class CommentAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
         if (viewType == VIEW_TYPE_ENDLIST_INDICATOR) {
             View view = mInflater.inflate(R.layout.endlist_indicator, parent, false);
-            view.getLayoutParams().height = mEndListIndicatorHeight;
             return new EndListViewHolder(view);
         } else {
             View view = mInflater.inflate(R.layout.comment_listitem, parent, false);
@@ -278,11 +275,11 @@ class CommentAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         }
     }
 
-    public boolean isEmpty() {
+    boolean isEmpty() {
         return getItemCount() == 0;
     }
 
-    public void setEnableSelection(boolean enable) {
+    void setEnableSelection(boolean enable) {
         if (enable == mEnableSelection) return;
 
         mEnableSelection = enable;
@@ -303,11 +300,11 @@ class CommentAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         }
     }
 
-    public int getSelectedCommentCount() {
+    int getSelectedCommentCount() {
         return mSelectedCommentsId.size();
     }
 
-    public CommentList getSelectedComments() {
+    CommentList getSelectedComments() {
         CommentList comments = new CommentList();
         if (!mEnableSelection) {
             return comments;
@@ -326,7 +323,7 @@ class CommentAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         return comment != null && mSelectedCommentsId.contains(comment.commentID);
     }
 
-    public void setItemSelected(int position, boolean isSelected, View view) {
+    void setItemSelected(int position, boolean isSelected, View view) {
         if (isItemSelected(position) == isSelected) return;
 
         Comment comment = getItem(position);
@@ -352,7 +349,7 @@ class CommentAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         }
     }
 
-    public void toggleItemSelected(int position, View view) {
+    void toggleItemSelected(int position, View view) {
         setItemSelected(position, !isItemSelected(position), view);
     }
 
@@ -388,12 +385,12 @@ class CommentAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         return (position >= 0 && position < mComments.size());
     }
 
-    public void replaceComments(CommentList comments) {
+    void replaceComments(CommentList comments) {
         mComments.replaceComments(comments);
         notifyDataSetChanged();
     }
 
-    public void deleteComments(CommentList comments) {
+    void deleteComments(CommentList comments) {
         mComments.deleteComments(comments);
         notifyDataSetChanged();
         if (mOnDataLoadedListener != null) {
@@ -412,7 +409,7 @@ class CommentAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     /*
      * load comments using an AsyncTask
      */
-    public void loadComments() {
+    void loadComments() {
         if (mIsLoadTaskRunning) {
             AppLog.w(AppLog.T.COMMENTS, "load comments task already active");
         } else {
@@ -475,9 +472,5 @@ class CommentAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
     public HashSet<Long> getSelectedCommentsId() {
         return mSelectedCommentsId;
-    }
-
-    interface OnDataLoadedListener {
-        void onDataLoaded(boolean isEmpty);
     }
 }

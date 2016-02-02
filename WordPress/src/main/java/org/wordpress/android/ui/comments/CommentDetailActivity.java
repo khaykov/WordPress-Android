@@ -17,7 +17,7 @@ import org.wordpress.android.util.AppLog;
 import org.wordpress.android.util.ToastUtils;
 
 /**
- * Host for {@link CommentDetailFragment}. For now only called from  {@link CommentsFragment}.
+ * Host for {@link CommentDetailFragment}. Currently only called from  {@link CommentsFragment}.
  */
 public class CommentDetailActivity extends AppCompatActivity {
 
@@ -43,10 +43,12 @@ public class CommentDetailActivity extends AppCompatActivity {
             Intent intent = getIntent();
             CommentDetailFragment commentDetailFragment = null;
 
-            //this case is not really used in current implementation, leave the code just in case
+            //this case is not used in current implementation, leave the code just in case
             if (intent.getStringExtra(KEY_COMMENT_DETAIL_NOTE_ID) != null && SimperiumUtils.getNotesBucket() != null) {
                 try {
-                    Note note = SimperiumUtils.getNotesBucket().get(intent.getStringExtra(KEY_COMMENT_DETAIL_NOTE_ID));
+                    Note note = SimperiumUtils.getNotesBucket().get(
+                            intent.getStringExtra(KEY_COMMENT_DETAIL_NOTE_ID)
+                    );
 
                     if (intent.hasExtra(KEY_COMMENT_DETAIL_IS_REMOTE)) {
                         commentDetailFragment = CommentDetailFragment.newInstanceForRemoteNoteComment(note.getId());
@@ -65,8 +67,9 @@ public class CommentDetailActivity extends AppCompatActivity {
             }
 
             if (commentDetailFragment != null) {
-                getSupportFragmentManager().beginTransaction().add(R.id.fragment_container,
-                        commentDetailFragment, TAG_COMMENT_DETAIL_FRAGMENT).commit();
+                getSupportFragmentManager().beginTransaction()
+                        .add(R.id.fragment_container, commentDetailFragment, TAG_COMMENT_DETAIL_FRAGMENT)
+                        .commit();
             } else {
                 ToastUtils.showToast(this, R.string.error_load_comment);
                 finish();

@@ -417,7 +417,8 @@ public class CommentDetailFragment extends Fragment implements NotificationFragm
             }
 
             // tell the subscribers that comment have been edited
-            EventBus.getDefault().postSticky(new CommentEvents.CommentChangedEvent(ChangedFrom.COMMENT_DETAIL, ChangeType.EDITED));
+            EventBus.getDefault().postSticky(new CommentEvents.CommentChangedEvent(ChangedFrom.COMMENT_DETAIL, ChangeType
+                    .EDITED));
         }
     }
 
@@ -734,7 +735,8 @@ public class CommentDetailFragment extends Fragment implements NotificationFragm
             getActivity().finish();
         }
 
-        //CommentDetailActivity is not used without CommentActivity so this will be commented  for now
+        // CommentDetailActivity is not used independently anymore (only called from CommentActivity)
+        // so below code will be commented out. Maybe we will need it later?
 
 //        // Basic moderation support, currently only used when this Fragment is in a CommentDetailActivity
 //        // Uses WP.com REST API and requires a note object
@@ -782,8 +784,9 @@ public class CommentDetailFragment extends Fragment implements NotificationFragm
             public void onActionResult(boolean succeeded) {
                 mIsSubmittingReply = false;
                 if (succeeded) {
-                    EventBus.getDefault().postSticky(new CommentEvents.CommentChangedEvent(ChangedFrom.COMMENT_DETAIL, ChangeType
-                            .REPLIED));
+                    EventBus.getDefault().postSticky(new CommentEvents.CommentChangedEvent(ChangedFrom.COMMENT_DETAIL,
+                            ChangeType
+                                    .REPLIED));
                 }
                 if (isAdded()) {
                     mEditReply.setEnabled(true);
@@ -926,8 +929,7 @@ public class CommentDetailFragment extends Fragment implements NotificationFragm
         if (status == CommentStatus.APPROVED) {
             mBtnModerateIcon.setImageResource(R.drawable.ic_action_approve_active);
             mBtnModerateTextView.setText(R.string.comment_status_approved);
-            mBtnModerateTextView.setTextColor(getActivity().getResources().getColor(R.color
-                    .notification_status_unapproved_dark));
+            mBtnModerateTextView.setTextColor(getActivity().getResources().getColor(R.color.notification_status_unapproved_dark));
         } else {
             mBtnModerateIcon.setImageResource(R.drawable.ic_action_approve);
             mBtnModerateTextView.setText(R.string.mnu_comment_approve);
@@ -962,8 +964,7 @@ public class CommentDetailFragment extends Fragment implements NotificationFragm
     }
 
     private boolean canLike() {
-        return (!mShouldRequestCommentFromNote && mEnabledActions != null && mEnabledActions.contains(EnabledActions
-                .ACTION_LIKE));
+        return (!mShouldRequestCommentFromNote && mEnabledActions != null && mEnabledActions.contains(EnabledActions.ACTION_LIKE));
     }
 
     /*
@@ -1156,6 +1157,4 @@ public class CommentDetailFragment extends Fragment implements NotificationFragm
     private void setRemoteBlogId(int remoteBlogId) {
         mRemoteBlogId = remoteBlogId;
     }
-
-
 }

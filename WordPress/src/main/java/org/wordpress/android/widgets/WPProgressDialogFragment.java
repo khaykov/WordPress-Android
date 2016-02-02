@@ -40,6 +40,7 @@ public class WPProgressDialogFragment extends DialogFragment {
         dialog.setIndeterminate(true);
         dialog.setCancelable(false);
         dialog.setProgressStyle(ProgressDialog.STYLE_SPINNER);
+
         return dialog;
     }
 }

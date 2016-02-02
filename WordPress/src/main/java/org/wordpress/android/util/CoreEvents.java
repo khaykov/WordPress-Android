@@ -16,7 +16,7 @@ public class CoreEvents {
         }
     }
     public static class MainViewPagerPageSelected {
-        public final int mPosition;
+        private final int mPosition;
         public MainViewPagerPageSelected(int position) {
             mPosition = position;
         }

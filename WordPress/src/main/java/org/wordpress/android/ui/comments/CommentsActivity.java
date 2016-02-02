@@ -57,15 +57,6 @@ public class CommentsActivity extends DualPaneContentActivity {
     }
 
     @Override
-    public void onBackPressed() {
-        if (getFragmentManager().getBackStackEntryCount() > 0) {
-            getFragmentManager().popBackStack();
-        } else {
-            super.onBackPressed();
-        }
-    }
-
-    @Override
     protected void onNewIntent(Intent intent) {
         super.onNewIntent(intent);
         AppLog.d(AppLog.T.COMMENTS, "comment activity new intent");
