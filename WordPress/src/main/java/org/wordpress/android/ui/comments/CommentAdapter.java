@@ -394,12 +394,10 @@ class CommentAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     }
 
     public void removeComment(Comment comment) {
-        removeCommentById(comment.commentID);
-    }
+        if (comment == null) return;
 
-    public void removeCommentById(long commentID) {
-        mTrashedCommentsId.add(commentID);
-        int position = indexOfCommentId(commentID);
+        mTrashedCommentsId.add(comment.commentID);
+        int position = indexOfCommentId(comment.commentID);
         if (position >= 0) {
             mComments.remove(position);
             notifyItemRemoved(position);
@@ -477,10 +475,6 @@ class CommentAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
     public HashSet<Long> getSelectedCommentsId() {
         return mSelectedCommentsId;
-    }
-
-    public HashSet<Long> getModeratedCommentId() {
-        return mModeratingCommentsIds;
     }
 
     public CommentAdapterState saveAdapterState() {
