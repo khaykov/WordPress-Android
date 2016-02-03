@@ -785,8 +785,7 @@ public class CommentDetailFragment extends Fragment implements NotificationFragm
                 mIsSubmittingReply = false;
                 if (succeeded) {
                     EventBus.getDefault().postSticky(new CommentEvents.CommentChangedEvent(ChangedFrom.COMMENT_DETAIL,
-                            ChangeType
-                                    .REPLIED));
+                            ChangeType.REPLIED));
                 }
                 if (isAdded()) {
                     mEditReply.setEnabled(true);
@@ -929,7 +928,8 @@ public class CommentDetailFragment extends Fragment implements NotificationFragm
         if (status == CommentStatus.APPROVED) {
             mBtnModerateIcon.setImageResource(R.drawable.ic_action_approve_active);
             mBtnModerateTextView.setText(R.string.comment_status_approved);
-            mBtnModerateTextView.setTextColor(getActivity().getResources().getColor(R.color.notification_status_unapproved_dark));
+            mBtnModerateTextView.setTextColor(getActivity().getResources().getColor(R.color
+                    .notification_status_unapproved_dark));
         } else {
             mBtnModerateIcon.setImageResource(R.drawable.ic_action_approve);
             mBtnModerateTextView.setText(R.string.mnu_comment_approve);

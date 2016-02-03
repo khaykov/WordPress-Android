@@ -48,7 +48,6 @@ import org.xmlrpc.android.ApiHelper;
 import org.xmlrpc.android.ApiHelper.ErrorType;
 import org.xmlrpc.android.XMLRPCFault;
 
-import java.io.Serializable;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -63,19 +62,13 @@ public class CommentsListFragment extends Fragment implements
 
     private static final String KEY_AUTO_REFRESHED = "has_auto_refreshed";
     private static final String KEY_EMPTY_VIEW_MESSAGE = "empty_view_message";
-    private static final String KEY_SELECTED_COMMENTS = "selected_comments";
-    private static final String KEY_MODERATED_COMMENT_ID = "moderated_comment_id";
-
-    private final CommentList mTrashedComments = new CommentList();
-
-    private HashSet<Long> mSelectedComments;
 
     private boolean mIsUpdatingComments = false;
     private boolean mCanLoadMoreComments = true;
     boolean mHasAutoRefreshedComments = false;
     private boolean mHasCheckedDeletedComments = false;
 
-    private long mRetainedModeratedCommentId = -1;
+    private final HashSet<Long> mTrashedCommentsId = new HashSet<>();
 
     private ProgressBar mProgressLoadMore;
     private SwipeToRefreshHelper mSwipeToRefreshHelper;
@@ -86,6 +79,8 @@ public class CommentsListFragment extends Fragment implements
     private EmptyViewMessageType mEmptyViewMessageType = EmptyViewMessageType.NO_CONTENT;
 
     private UpdateCommentsTask mUpdateCommentsTask;
+
+    private CommentAdapterState mCommentAdapterState;
 
     private static final int COMMENTS_PER_PAGE = 30;
 
@@ -99,8 +94,7 @@ public class CommentsListFragment extends Fragment implements
             mEmptyViewMessageType = EmptyViewMessageType.getEnumFromString(
                     savedInstanceState.getString(KEY_EMPTY_VIEW_MESSAGE, EmptyViewMessageType.NO_CONTENT.name()));
 
-            mSelectedComments = (HashSet<Long>) savedInstanceState.getSerializable(KEY_SELECTED_COMMENTS);
-            mRetainedModeratedCommentId = savedInstanceState.getLong(KEY_MODERATED_COMMENT_ID);
+            mCommentAdapterState = savedInstanceState.getParcelable(CommentAdapterState.TAG);
         }
     }
 
@@ -173,6 +167,9 @@ public class CommentsListFragment extends Fragment implements
         if (mRecycler.getAdapter() == null) {
             mRecycler.setAdapter(getCommentsAdapter());
             getCommentsAdapter().loadComments();
+        } else {
+            getCommentsAdapter().setInitialState(mCommentAdapterState);
+            getCommentsAdapter().notifyDataSetChanged();
         }
     }
 
@@ -186,7 +183,7 @@ public class CommentsListFragment extends Fragment implements
         return getCommentsAdapter().getSelectedCommentCount();
     }
 
-    public void removeComment(Comment comment) {
+    public void removeCommentFromAdapter(Comment comment) {
         if (hasAdapter() && comment != null) {
             getCommentsAdapter().removeComment(comment);
 
@@ -254,6 +251,7 @@ public class CommentsListFragment extends Fragment implements
 
     public void onEventMainThread(CommentEvents.BatchCommentsModeratedEvent moderatedComments) {
         if (!isAdded()) return;
+        EventBus.getDefault().removeStickyEvent(CommentEvents.BatchCommentsModeratedEvent.class);
 
         hideProgressDialog();
         finishActionMode();
@@ -312,7 +310,7 @@ public class CommentsListFragment extends Fragment implements
         // this is called from CommentsActivity when a comment was changed in the detail view,
         // and the change will already be in SQLite so simply reload the comment adapter
         // to show the change
-        if (hasAdapter()) {
+        if (hasAdapter() && !mIsUpdatingComments) {
             getCommentsAdapter().loadComments();
         }
     }
@@ -451,7 +449,7 @@ public class CommentsListFragment extends Fragment implements
                 }
             }
 
-            if (!getActivity().isFinishing()) {
+            if (isAdded()) {
                 if (comments != null && comments.size() > 0) {
                     getCommentsAdapter().loadComments();
                 } else {
@@ -466,19 +464,13 @@ public class CommentsListFragment extends Fragment implements
         super.onSaveInstanceState(outState);
 
         if (hasAdapter()) {
-            mSelectedComments = getCommentsAdapter().getSelectedCommentsId();
-
-            if (getCommentsAdapter().hasModeratedComments()) {
-                mRetainedModeratedCommentId = getCommentsAdapter().getModeratedCommentId().get(0);
-            }
+            mCommentAdapterState = getCommentsAdapter().saveAdapterState();
         }
 
-        if (mSelectedComments != null) {
-            //we need to make sure that we pass exact state of mSelectedComments at the time of onSaveInstanceState
-            outState.putSerializable(KEY_SELECTED_COMMENTS, (Serializable) mSelectedComments.clone());
+        if (mCommentAdapterState != null) {
+            outState.putParcelable(CommentAdapterState.TAG, mCommentAdapterState);
         }
 
-        outState.putLong(KEY_MODERATED_COMMENT_ID, mRetainedModeratedCommentId);
         outState.putBoolean(KEY_AUTO_REFRESHED, mHasAutoRefreshedComments);
         outState.putString(KEY_EMPTY_VIEW_MESSAGE, getEmptyViewMessage());
     }
@@ -567,7 +559,6 @@ public class CommentsListFragment extends Fragment implements
             MenuInflater inflater = actionMode.getMenuInflater();
             inflater.inflate(R.menu.menu_comments_cab, menu);
             mSwipeToRefreshHelper.setEnabled(false);
-            mSelectedComments = null;
             return true;
         }
 
@@ -636,7 +627,8 @@ public class CommentsListFragment extends Fragment implements
 
     private CommentAdapter getCommentsAdapter() {
         if (mCommentsAdapter == null) {
-            mCommentsAdapter = new CommentAdapter(getActivity(), WordPress.getCurrentLocalTableBlogId(), mSelectedComments);
+            mCommentsAdapter = new CommentAdapter(getActivity(), WordPress.getCurrentLocalTableBlogId(),
+                    mCommentAdapterState);
             mCommentsAdapter.setOnCommentPressedListener(this);
             mCommentsAdapter.setOnDataLoadedListener(this);
             mCommentsAdapter.setOnLoadMoreListener(this);
@@ -695,11 +687,6 @@ public class CommentsListFragment extends Fragment implements
             if (EventBus.getDefault().getStickyEvent(CommentEvents.CommentModeratedEvent.class) != null) {
                 onEventMainThread(EventBus.getDefault().getStickyEvent(CommentEvents.CommentModeratedEvent.class));
             }
-
-            if (mRetainedModeratedCommentId != -1) {
-                setCommentIsModerating(mRetainedModeratedCommentId, true);
-                mRetainedModeratedCommentId = -1;
-            }
         } else if (!mIsUpdatingComments && mEmptyViewMessageType.equals(EmptyViewMessageType.LOADING)) {
             // Change LOADING to NO_CONTENT message
             updateEmptyView(EmptyViewMessageType.NO_CONTENT);
@@ -729,7 +716,8 @@ public class CommentsListFragment extends Fragment implements
     }
 
     private boolean shouldRestoreCab() {
-        return mSelectedComments != null && mSelectedComments.size() > 0 && mActionMode == null;
+        return getCommentsAdapter() != null && !getCommentsAdapter().getSelectedCommentsId().isEmpty() && mActionMode ==
+                null;
     }
 
     private void restoreCab() {
@@ -792,36 +780,37 @@ public class CommentsListFragment extends Fragment implements
     public void onEventMainThread(CommentEvents.CommentModeratedEvent event) {
         if (!hasAdapter() || !isAdded() || getView() == null) return;
 
+        EventBus.getDefault().removeStickyEvent(CommentEvents.CommentModeratedEvent.class);
+
         final int accountId = event.getAccountId();
         final Comment comment = event.getComment();
         final CommentStatus newStatus = event.getNewStatus();
 
-        EventBus.getDefault().removeStickyEvent(CommentEvents.CommentModeratedEvent.class);
+        setCommentIsModerating(comment.commentID, true);
 
         if (newStatus == CommentStatus.APPROVED || newStatus == CommentStatus.UNAPPROVED) {
-            setCommentIsModerating(comment.commentID, true);
             CommentActions.moderateComment(accountId, comment, newStatus,
                     new CommentActions.CommentActionListener() {
                         @Override
                         public void onActionResult(boolean succeeded) {
-                            if (EventBus.getDefault().hasSubscriberForEvent(CommentEvents.CommentModerationFinishedEvent
-                                    .class)) {
+                            if (isListeningForModerationResult()) {
                                 EventBus.getDefault().postSticky(new CommentEvents.CommentModerationFinishedEvent
                                         (succeeded, true, comment.commentID));
                             }
                         }
                     });
         } else if (newStatus == CommentStatus.SPAM || newStatus == CommentStatus.TRASH) {
-            mTrashedComments.add(comment);
-            removeComment(comment);
-            setCommentIsModerating(comment.commentID, true);
+            mTrashedCommentsId.add(comment.commentID);
+            removeCommentFromAdapter(comment);
 
             String message = (newStatus == CommentStatus.TRASH ? getString(R.string.comment_trashed) : getString(R.string
                     .comment_spammed));
             View.OnClickListener undoListener = new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    mTrashedComments.remove(comment);
+                    getCommentsAdapter().undoRemove(comment.commentID);
+                    mTrashedCommentsId.remove(comment.commentID);
+
                     setCommentIsModerating(comment.commentID, false);
                     loadComments();
                 }
@@ -837,18 +826,17 @@ public class CommentsListFragment extends Fragment implements
                     super.onDismissed(snackbar, event);
 
                     // comment will no longer exist in moderating list if action was undone
-                    if (!mTrashedComments.contains(comment)) {
+                    if (!mTrashedCommentsId.contains(comment.commentID)) {
                         return;
                     }
-                    mTrashedComments.remove(comment);
+                    mTrashedCommentsId.remove(comment.commentID);
 
                     CommentActions.moderateComment(accountId, comment, newStatus, new CommentActions.CommentActionListener
                             () {
                         @Override
                         public void onActionResult(boolean succeeded) {
 
-                            if (EventBus.getDefault().hasSubscriberForEvent(CommentEvents.CommentModerationFinishedEvent
-                                    .class)) {
+                            if (isListeningForModerationResult()) {
                                 EventBus.getDefault().postSticky(new CommentEvents.CommentModerationFinishedEvent
                                         (succeeded, false, comment.commentID));
                             }
@@ -869,24 +857,24 @@ public class CommentsListFragment extends Fragment implements
                     loadComments();
                     break;
                 case REPLIED:
-                    loadComments();
+                    updateComments(false);
                     break;
             }
         }
     }
 
+    private boolean isListeningForModerationResult() {
+        return EventBus.getDefault().hasSubscriberForEvent(CommentEvents.CommentModerationFinishedEvent.class);
+    }
+
     public void onEventMainThread(CommentEvents.CommentModerationFinishedEvent event) {
         if (!isAdded()) return;
-
         EventBus.getDefault().removeStickyEvent(CommentEvents.CommentModerationFinishedEvent.class);
 
         setCommentIsModerating(event.getCommentId(), false);
 
         if (!event.isSuccess()) {
-            ToastUtils.showToast(getActivity(),
-                    R.string.error_moderate_comment,
-                    ToastUtils.Duration.LONG
-            );
+            ToastUtils.showToast(getActivity(), R.string.error_moderate_comment, ToastUtils.Duration.LONG);
         }
 
         if (event.isCommentsRefreshRequired()) {

@@ -22,9 +22,7 @@ import org.wordpress.android.util.AppLog;
 import org.wordpress.android.util.DateTimeUtils;
 import org.wordpress.android.widgets.WPNetworkImageView;
 
-import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.List;
 
 class CommentAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     interface OnDataLoadedListener {
@@ -52,7 +50,8 @@ class CommentAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
     private final CommentList mComments = new CommentList();
     private final HashSet<Long> mSelectedCommentsId = new HashSet<>();
-    private final List<Long> mModeratingCommentsIds = new ArrayList<>();
+    private final HashSet<Long> mModeratingCommentsIds = new HashSet<>();
+    private final HashSet<Long> mTrashedCommentsId = new HashSet<>();
 
     private final int mStatusColorSpam;
     private final int mStatusColorUnapproved;
@@ -119,7 +118,7 @@ class CommentAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         }
     }
 
-    public CommentAdapter(Context context, int localBlogId, HashSet<Long> preSelectedCommentsId) {
+    public CommentAdapter(Context context, int localBlogId, CommentAdapterState commentAdapterState) {
         mInflater = LayoutInflater.from(context);
 
         mLocalBlogId = localBlogId;
@@ -135,11 +134,7 @@ class CommentAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
         mAvatarSz = context.getResources().getDimensionPixelSize(R.dimen.avatar_sz_medium);
 
-        //we might have preselected comments when initializing adapter (ex. after configuration change)
-        if (preSelectedCommentsId != null) {
-            mSelectedCommentsId.addAll(preSelectedCommentsId);
-            setEnableSelection(true);
-        }
+        setInitialState(commentAdapterState);
 
         setHasStableIds(true);
     }
@@ -399,11 +394,20 @@ class CommentAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     }
 
     public void removeComment(Comment comment) {
-        int position = indexOfCommentId(comment.commentID);
+        removeCommentById(comment.commentID);
+    }
+
+    public void removeCommentById(long commentID) {
+        mTrashedCommentsId.add(commentID);
+        int position = indexOfCommentId(commentID);
         if (position >= 0) {
             mComments.remove(position);
             notifyItemRemoved(position);
         }
+    }
+
+    public void undoRemove(long commentId) {
+        mTrashedCommentsId.remove(commentId);
     }
 
     /*
@@ -459,6 +463,7 @@ class CommentAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
             if (result) {
                 mComments.clear();
                 mComments.addAll(tmpComments);
+                removeTrashedComments();
                 notifyDataSetChanged();
             }
 
@@ -474,11 +479,45 @@ class CommentAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         return mSelectedCommentsId;
     }
 
-    public List<Long> getModeratedCommentId() {
+    public HashSet<Long> getModeratedCommentId() {
         return mModeratingCommentsIds;
     }
 
-    public boolean hasModeratedComments() {
-        return mModeratingCommentsIds.size() > 0;
+    public CommentAdapterState saveAdapterState() {
+        CommentAdapterState state = new CommentAdapterState(
+                mTrashedCommentsId,
+                mSelectedCommentsId,
+                mModeratingCommentsIds);
+
+        return state;
+    }
+
+    private void removeTrashedComments() {
+        if (!mTrashedCommentsId.isEmpty()) {
+            for (Long trashedCommentId : mTrashedCommentsId) {
+                int index = mComments.indexOfCommentId(trashedCommentId);
+                if (isPositionValid(index)) {
+                    mComments.remove(index);
+                }
+            }
+        }
+    }
+
+    public void setInitialState(CommentAdapterState adapterState) {
+        if (adapterState == null) return;
+        //we might have preselected comments when initializing adapter (ex. after configuration change)
+        if (adapterState.hasSelectedComments()) {
+            mSelectedCommentsId.addAll(adapterState.getSelectedComments());
+            setEnableSelection(true);
+        }
+
+        if (adapterState.hasModeratingComments()) {
+            mModeratingCommentsIds.addAll(adapterState.getModeratedCommentsId());
+        }
+
+        if (adapterState.hasTrashedComments()) {
+            mTrashedCommentsId.addAll(adapterState.getTrashedCommentId());
+            removeTrashedComments();
+        }
     }
 }
