@@ -1,8 +1,8 @@
 package org.wordpress.android.ui.themes;
 
 import android.app.AlertDialog;
-import android.support.v4.app.FragmentManager;
-import android.support.v4.app.FragmentTransaction;
+import android.app.FragmentManager;
+import android.app.FragmentTransaction;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.AsyncTask;
@@ -137,7 +137,7 @@ public class ThemeBrowserActivity extends AppCompatActivity implements ThemeBrow
 
     @Override
     public void onBackPressed() {
-        FragmentManager fm = getSupportFragmentManager();
+        FragmentManager fm = getFragmentManager();
         if (fm.getBackStackEntryCount() > 0) {
             fm.popBackStack();
         } else {
@@ -182,7 +182,7 @@ public class ThemeBrowserActivity extends AppCompatActivity implements ThemeBrow
                             String errorMsg = getString(R.string.theme_auth_error_message);
 
                             if (mIsRunning) {
-                                FragmentTransaction ft = getSupportFragmentManager().beginTransaction();
+                                FragmentTransaction ft = getFragmentManager().beginTransaction();
                                 WPAlertDialogFragment fragment = WPAlertDialogFragment.newAlertDialog(errorMsg,
                                         errorTitle);
                                 ft.add(fragment, ALERT_TAB);
@@ -221,7 +221,7 @@ public class ThemeBrowserActivity extends AppCompatActivity implements ThemeBrow
                             String errorMsg = getString(R.string.theme_auth_error_message);
 
                             if (mIsRunning) {
-                                FragmentTransaction ft = getSupportFragmentManager().beginTransaction();
+                                FragmentTransaction ft = getFragmentManager().beginTransaction();
                                 WPAlertDialogFragment fragment = WPAlertDialogFragment.newAlertDialog(errorMsg,
                                         errorTitle);
                                 ft.add(fragment, ALERT_TAB);
@@ -339,7 +339,7 @@ public class ThemeBrowserActivity extends AppCompatActivity implements ThemeBrow
             mThemeBrowserFragment = new ThemeBrowserFragment();
         }
         showToolbar();
-        FragmentTransaction fragmentTransaction = getSupportFragmentManager().beginTransaction();
+        FragmentTransaction fragmentTransaction = getFragmentManager().beginTransaction();
         fragmentTransaction.add(R.id.theme_browser_container, mThemeBrowserFragment);
         fragmentTransaction.commit();
     }
@@ -349,7 +349,7 @@ public class ThemeBrowserActivity extends AppCompatActivity implements ThemeBrow
             mThemeSearchFragment = new ThemeSearchFragment();
         }
         showSearchToolbar();
-        FragmentTransaction fragmentTransaction = getSupportFragmentManager().beginTransaction();
+        FragmentTransaction fragmentTransaction = getFragmentManager().beginTransaction();
         fragmentTransaction.replace(R.id.theme_browser_container, mThemeSearchFragment);
         fragmentTransaction.addToBackStack(null);
         fragmentTransaction.commit();
