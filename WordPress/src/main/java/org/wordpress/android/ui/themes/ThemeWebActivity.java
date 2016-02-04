@@ -64,9 +64,9 @@ public class ThemeWebActivity extends WPWebViewActivity {
         intent.putExtra(IS_PREMIUM_THEME, currentTheme.isPremium());
         intent.putExtra(IS_CURRENT_THEME, isCurrentTheme);
         intent.putExtra(THEME_NAME, currentTheme.getName());
-        intent.putExtra(ThemeBrowserActivity.THEME_ID, currentTheme.getId());
+        intent.putExtra(ThemeFragment.THEME_ID, currentTheme.getId());
 
-        activity.startActivityForResult(intent, ThemeBrowserActivity.ACTIVATE_THEME);
+        activity.startActivityForResult(intent, ThemeFragment.ACTIVATE_THEME);
     }
 
     public static String getUrl(Theme theme, ThemeWebActivityType type, boolean isPremium) {
@@ -119,8 +119,8 @@ public class ThemeWebActivity extends WPWebViewActivity {
         if (item.getItemId() == R.id.action_activate) {
             Intent returnIntent = new Intent();
             setResult(RESULT_OK, returnIntent);
-            returnIntent.putExtra(ThemeBrowserActivity.THEME_ID,
-                    getIntent().getStringExtra(ThemeBrowserActivity.THEME_ID));
+            returnIntent.putExtra(ThemeFragment.THEME_ID,
+                    getIntent().getStringExtra(ThemeFragment.THEME_ID));
             finish();
             return true;
         } else {
