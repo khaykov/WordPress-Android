@@ -464,11 +464,7 @@ public class CommentsListFragment extends Fragment implements
         super.onSaveInstanceState(outState);
 
         if (hasAdapter()) {
-            mCommentAdapterState = getCommentsAdapter().saveAdapterState();
-        }
-
-        if (mCommentAdapterState != null) {
-            outState.putParcelable(CommentAdapterState.TAG, mCommentAdapterState);
+            outState.putParcelable(CommentAdapterState.TAG, getCommentsAdapter().saveAdapterState());
         }
 
         outState.putBoolean(KEY_AUTO_REFRESHED, mHasAutoRefreshedComments);
@@ -627,8 +623,8 @@ public class CommentsListFragment extends Fragment implements
 
     private CommentAdapter getCommentsAdapter() {
         if (mCommentsAdapter == null) {
-            mCommentsAdapter = new CommentAdapter(getActivity(), WordPress.getCurrentLocalTableBlogId(),
-                    mCommentAdapterState);
+            mCommentsAdapter = new CommentAdapter(getActivity(), WordPress.getCurrentLocalTableBlogId());
+            mCommentsAdapter.setInitialState(mCommentAdapterState);
             mCommentsAdapter.setOnCommentPressedListener(this);
             mCommentsAdapter.setOnDataLoadedListener(this);
             mCommentsAdapter.setOnLoadMoreListener(this);

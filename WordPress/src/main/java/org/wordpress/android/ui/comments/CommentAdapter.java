@@ -118,7 +118,7 @@ class CommentAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         }
     }
 
-    public CommentAdapter(Context context, int localBlogId, CommentAdapterState commentAdapterState) {
+    public CommentAdapter(Context context, int localBlogId) {
         mInflater = LayoutInflater.from(context);
 
         mLocalBlogId = localBlogId;
@@ -134,7 +134,6 @@ class CommentAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
         mAvatarSz = context.getResources().getDimensionPixelSize(R.dimen.avatar_sz_medium);
 
-        setInitialState(commentAdapterState);
 
         setHasStableIds(true);
     }
