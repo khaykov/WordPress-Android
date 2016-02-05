@@ -176,8 +176,7 @@ public class ThemeFragment extends Fragment implements ThemeBrowserFragment.Them
 
                             if (mIsRunning) {
                                 FragmentTransaction ft = getChildFragmentManager().beginTransaction();
-                                WPAlertDialogFragment fragment = WPAlertDialogFragment.newAlertDialog(errorMsg,
-                                        errorTitle);
+                                WPAlertDialogFragment fragment = WPAlertDialogFragment.newAlertDialog(errorMsg, errorTitle);
                                 ft.add(fragment, ALERT_TAB);
                                 ft.commitAllowingStateLoss();
                             }
@@ -216,8 +215,7 @@ public class ThemeFragment extends Fragment implements ThemeBrowserFragment.Them
 
                             if (mIsRunning) {
                                 FragmentTransaction ft = getChildFragmentManager().beginTransaction();
-                                WPAlertDialogFragment fragment = WPAlertDialogFragment.newAlertDialog(errorMsg,
-                                        errorTitle);
+                                WPAlertDialogFragment fragment = WPAlertDialogFragment.newAlertDialog(errorMsg, errorTitle);
                                 ft.add(fragment, ALERT_TAB);
                                 ft.commitAllowingStateLoss();
                             }
@@ -410,12 +408,15 @@ public class ThemeFragment extends Fragment implements ThemeBrowserFragment.Them
 
         dialogBuilder.setMessage(thanksMessage);
         dialogBuilder.setNegativeButton(R.string.theme_done, null);
-        dialogBuilder.setPositiveButton(R.string.theme_manage_site, new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialog, int which) {
-//                finish();
-            }
-        });
+
+        if (!DualPaneHelper.isInDualPaneMode(this)) {
+            dialogBuilder.setPositiveButton(R.string.theme_manage_site, new DialogInterface.OnClickListener() {
+                @Override
+                public void onClick(DialogInterface dialog, int which) {
+                    getActivity().finish();
+                }
+            });
+        }
 
         AlertDialog alertDialog = dialogBuilder.create();
         alertDialog.show();
@@ -448,7 +449,14 @@ public class ThemeFragment extends Fragment implements ThemeBrowserFragment.Them
                                 themeProperties);
                         break;
                 }
-                ThemeWebActivity.openTheme(getActivity(), themeId, type, isCurrentTheme);
+
+
+                if(DualPaneHelper.isInDualPaneMode(this)){
+                    ThemeWebActivity.openTheme(getParentFragment(), themeId, type, isCurrentTheme);
+                }else{
+                    ThemeWebActivity.openTheme(this, themeId, type, isCurrentTheme);
+                }
+
                 return;
             } else {
                 toastText = getString(R.string.could_not_load_theme);
