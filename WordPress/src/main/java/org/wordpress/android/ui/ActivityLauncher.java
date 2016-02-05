@@ -39,6 +39,7 @@ import org.wordpress.android.ui.stats.StatsConstants;
 import org.wordpress.android.ui.stats.StatsSingleItemDetailsActivity;
 import org.wordpress.android.ui.stats.models.PostModel;
 import org.wordpress.android.ui.themes.ThemeBrowserActivity;
+import org.wordpress.android.ui.themes.ThemeFragment;
 import org.wordpress.android.util.AnalyticsUtils;
 import org.wordpress.android.util.AppLog;
 import org.wordpress.android.util.DualPaneHelper;
@@ -148,9 +149,18 @@ public class ActivityLauncher {
         }
     }
 
-    public static void viewCurrentBlogThemes(Context context) {
-        if (ThemeBrowserActivity.isAccessible()) {
-            Intent intent = new Intent(context, ThemeBrowserActivity.class);
+    public static void viewCurrentBlogThemes(Context context, @Nullable DualPaneHost dualPaneHost) {
+        if (!ThemeFragment.isAccessible()) return;
+
+        Intent intent = new Intent(context, ThemeBrowserActivity.class);
+        if (dualPaneHost != null) {
+            showDualPaneContent(context,
+                    ThemeFragment.class,
+                    context.getString(R.string.fragment_tag_theme),
+                    intent,
+                    dualPaneHost,
+                    null);
+        } else {
             slideInFromRight(context, intent);
         }
     }

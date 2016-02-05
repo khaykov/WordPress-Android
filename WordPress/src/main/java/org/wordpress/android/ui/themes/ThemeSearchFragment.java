@@ -105,9 +105,9 @@ public class ThemeSearchFragment extends ThemeBrowserFragment implements SearchV
 
     @Override
     public boolean onMenuItemActionCollapse(MenuItem item) {
-        mThemeBrowserActivity.setIsInSearchMode(false);
-        mThemeBrowserActivity.showToolbar();
-        mThemeBrowserActivity.getFragmentManager().popBackStack();
+        mThemesFragment.setIsInSearchMode(false);
+        mThemesFragment.showToolbar();
+        mThemesFragment.getChildFragmentManager().popBackStack();
         return true;
     }
 
@@ -159,8 +159,8 @@ public class ThemeSearchFragment extends ThemeBrowserFragment implements SearchV
     public void search(String searchTerm) {
         mLastSearch = searchTerm;
 
-        if (NetworkUtils.isNetworkAvailable(mThemeBrowserActivity)) {
-            mThemeBrowserActivity.searchThemes(searchTerm);
+        if (NetworkUtils.isNetworkAvailable(getActivity())) {
+            mThemesFragment.searchThemes(searchTerm);
         } else {
             refreshView(getSpinnerPosition());
         }
