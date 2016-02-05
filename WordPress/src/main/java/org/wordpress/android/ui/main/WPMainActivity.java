@@ -138,6 +138,10 @@ public class WPMainActivity extends AppCompatActivity implements Bucket.Listener
                         break;
                 }
                 trackLastVisibleTab(position, true);
+
+                if (EventBus.getDefault().hasSubscriberForEvent(CoreEvents.MainViewPagerPageSelected.class)) {
+                    EventBus.getDefault().post(new CoreEvents.MainViewPagerPageSelected(position));
+                }
             }
 
             @Override

@@ -13,14 +13,14 @@ import org.wordpress.android.ui.reader.ReaderPostListFragment;
 /**
  * pager adapter containing tab fragments used by WPMainActivity
  */
-class WPMainTabAdapter extends FragmentStatePagerAdapter {
+public class WPMainTabAdapter extends FragmentStatePagerAdapter {
 
     static final int NUM_TABS = 4;
 
-    static final int TAB_MY_SITE = 0;
-    static final int TAB_READER  = 1;
-    static final int TAB_ME      = 2;
-    static final int TAB_NOTIFS  = 3;
+    public static final int TAB_MY_SITE = 0;
+    public static final int TAB_READER = 1;
+    public static final int TAB_ME = 2;
+    public static final int TAB_NOTIFS = 3;
 
     private final SparseArray<Fragment> mFragments = new SparseArray<>(NUM_TABS);
 
@@ -87,5 +87,4 @@ class WPMainTabAdapter extends FragmentStatePagerAdapter {
             return null;
         }
     }
-
 }

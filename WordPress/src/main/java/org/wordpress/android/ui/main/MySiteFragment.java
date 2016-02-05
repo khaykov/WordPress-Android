@@ -278,7 +278,8 @@ public class MySiteFragment extends Fragment implements WPMainActivity.OnScrollT
                             DualPaneHelper.getDualPaneHost(MySiteFragment.this));
                     break;
                 case R.id.row_comments:
-                    ActivityLauncher.viewCurrentBlogComments(getActivity());
+                    ActivityLauncher.viewCurrentBlogComments(getActivity(),
+                            DualPaneHelper.getDualPaneHost(MySiteFragment.this));
                     break;
                 case R.id.row_themes:
                     ActivityLauncher.viewCurrentBlogThemes(getActivity());
