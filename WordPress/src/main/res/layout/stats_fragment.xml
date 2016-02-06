@@ -29,20 +29,6 @@
                 android:layout_marginRight="@dimen/content_margin"
                 android:orientation="vertical">
 
-                <RelativeLayout
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="@dimen/margin_large"
-                    android:addStatesFromChildren="true"
-                    android:background="?android:selectableItemBackground">
-
-                    <Spinner
-                        android:id="@+id/time_frame_spinner"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content" />
-
-                </RelativeLayout>
-
                 <LinearLayout
                     android:id="@+id/stats_insights_fragments_container"
                     android:layout_width="match_parent"
