@@ -438,7 +438,7 @@ public class MySiteFragment extends Fragment implements WPMainActivity.OnScrollT
     @Override
     public void onStart() {
         super.onStart();
-        EventBus.getDefault().register(this);
+        EventBus.getDefault().registerSticky(this);
     }
 
     /*
@@ -463,5 +463,16 @@ public class MySiteFragment extends Fragment implements WPMainActivity.OnScrollT
         super.onSaveInstanceState(outState);
         outState.putInt(SELECTED_ROW_VIEW_ID, mSelectedRowViewId);
         outState.putInt(PREVIOUS_BLOG_LOCAL_ID, mBlogLocalId);
+    }
+
+    @SuppressWarnings("unused")
+    public void onEventMainThread(ContentFragmentErrorEvent event) {
+        EventBus.getDefault().removeStickyEvent(ContentFragmentErrorEvent.class);
+        removeContentFragment();
+        resetRowSelection();
+        selectDefaultRow();
+    }
+
+    public static class ContentFragmentErrorEvent {
     }
 }
