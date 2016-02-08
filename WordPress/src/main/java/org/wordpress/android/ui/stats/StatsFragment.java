@@ -810,11 +810,9 @@ public class StatsFragment extends Fragment implements ScrollViewExt.ScrollViewL
     private void finishFragment() {
         if (DualPaneHelper.isInDualPaneMode(this)) {
             //we are telling MySite fragment that this fragment needs to be removed from host due to some error
-            if (DualPaneHelper.isInDualPaneMode(StatsFragment.this)) {
-                //Sticky event is used because if error
-                EventBus.getDefault().postSticky(new MySiteFragment.ContentFragmentErrorEvent());
-            }
+            EventBus.getDefault().postSticky(new MySiteFragment.ContentFragmentErrorEvent());
         } else {
+            //if fragment is not part of dual pane host finish activity it belongs to.
             getActivity().finish();
         }
     }
