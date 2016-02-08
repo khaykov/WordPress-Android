@@ -5,8 +5,6 @@ import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
-import android.graphics.PorterDuff;
-import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
@@ -24,6 +22,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.BaseAdapter;
+import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.Spinner;
 import android.widget.TextView;
@@ -40,6 +39,7 @@ import org.wordpress.android.ui.accounts.SignInActivity;
 import org.wordpress.android.ui.prefs.AppPrefs;
 import org.wordpress.android.util.AnalyticsUtils;
 import org.wordpress.android.util.AppLog;
+import org.wordpress.android.util.DualPaneHelper;
 import org.wordpress.android.util.NetworkUtils;
 import org.wordpress.android.util.RateLimitedTask;
 import org.wordpress.android.util.ToastUtils;
@@ -98,17 +98,6 @@ public class StatsFragment extends Fragment implements ScrollViewExt.ScrollViewL
             mLocalBlogID = savedInstanceState.getInt(StatsActivity.ARG_LOCAL_TABLE_BLOG_ID);
             mCurrentTimeframe = (StatsTimeframe) savedInstanceState.getSerializable(SAVED_STATS_TIMEFRAME);
             mRequestedDate = savedInstanceState.getString(SAVED_STATS_REQUESTED_DATE);
-
-            final int yScrollPosition = savedInstanceState.getInt(SAVED_STATS_SCROLL_POSITION);
-            if (yScrollPosition != 0) {
-                mOuterScrollView.postDelayed(new Runnable() {
-                    public void run() {
-                        if (!isAdded()) {
-                            mOuterScrollView.scrollTo(0, yScrollPosition);
-                        }
-                    }
-                }, StatsConstants.STATS_SCROLL_TO_DELAY);
-            }
         } else if (getArguments() != null) {
             mLocalBlogID = getArguments().getInt(StatsActivity.ARG_LOCAL_TABLE_BLOG_ID, -1);
             if (getArguments().containsKey(SAVED_STATS_TIMEFRAME)) {
@@ -131,44 +120,62 @@ public class StatsFragment extends Fragment implements ScrollViewExt.ScrollViewL
         }
     }
 
+    @Override
+    public void onViewCreated(View view, @Nullable Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+
+        if (savedInstanceState != null) {
+            final int yScrollPosition = savedInstanceState.getInt(SAVED_STATS_SCROLL_POSITION);
+            if (yScrollPosition != 0) {
+                mOuterScrollView.postDelayed(new Runnable() {
+                    public void run() {
+                        if (!isAdded()) {
+                            mOuterScrollView.scrollTo(0, yScrollPosition);
+                        }
+                    }
+                }, StatsConstants.STATS_SCROLL_TO_DELAY);
+            }
+        }
+    }
+
     @Nullable
     @Override
     public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.stats_fragment, container, false);
 
         Toolbar toolbar = (Toolbar) view.findViewById(R.id.toolbar);
+        if (DualPaneHelper.isInDualPaneMode(this)) {
 
-        ((AppCompatActivity) getActivity()).setSupportActionBar(toolbar);
-//
+
+            if (DualPaneHelper.isInDualPaneMode(this)) {
+                ScrollView.LayoutParams lp = (ScrollView.LayoutParams) view.findViewById(R.id.content_container)
+                        .getLayoutParams();
+                lp.leftMargin = getResources().getDimensionPixelSize(R.dimen.content_margin_normal);
+                lp.rightMargin = getResources().getDimensionPixelSize(R.dimen.content_margin_normal);
+            }
+
+
+            toolbar.setBackgroundColor(ContextCompat.getColor(getActivity(), R.color.white));
+//            toolbar.setNavigationIcon(null);
+
+            toolbar.setContentInsetsAbsolute(getResources().getDimensionPixelSize(R.dimen.content_margin_normal), 0);
+            toolbar.setContentInsetsRelative(getResources().getDimensionPixelSize(R.dimen.content_margin_normal), 0);
+
+            LinearLayout.LayoutParams layoutParams = (LinearLayout.LayoutParams) toolbar.getLayoutParams();
+            layoutParams.topMargin = getResources().getDimensionPixelSize(R.dimen.content_margin_normal);
+//            layoutParams.bottomMargin = getResources().getDimensionPixelSize(R.dimen.content_margin_normal);
+            layoutParams.leftMargin = getResources().getDimensionPixelSize(R.dimen.content_margin_normal);
+            layoutParams.rightMargin = getResources().getDimensionPixelSize(R.dimen.content_margin_normal) +3;
+//            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+//                toolbar.setElevation(getResources().getDimensionPixelSize(R.dimen.card_elevation));
+//            }
+        }
+        else{
+            ((AppCompatActivity) getActivity()).setSupportActionBar(toolbar);
             ActionBar actionBar = ((AppCompatActivity) getActivity()).getSupportActionBar();
-            actionBar.setDisplayShowTitleEnabled(true);
+            actionBar.setDisplayShowTitleEnabled(false);
             actionBar.setDisplayHomeAsUpEnabled(true);
-            getActivity().setTitle(R.string.stats);
-
-
-//        if (DualPaneHelper.isInDualPaneMode(getActivity()) && DualPaneHelper.isPartOfDualPaneDashboard(this)) {
-//            //hide toolbar in dual pane mode
-//            toolbar.setVisibility(View.GONE);
-//
-//            //Use normal margin (instead of wide, tablet one) while in dual pane mode.
-//            //Setting margin through different resource qualifiers in this case
-//            //is too complicated and harder to follow.
-//
-//                ScrollView.LayoutParams lp
-//                        = (ScrollView.LayoutParams) view.findViewById(R.id.content_container)
-//                        .getLayoutParams();
-//                lp.leftMargin = getResources().getDimensionPixelSize(R.dimen.content_margin_normal);
-//                lp.rightMargin = getResources().getDimensionPixelSize(R.dimen.content_margin_normal);
-//
-//        } else {
-//            ((AppCompatActivity) getActivity()).setSupportActionBar(toolbar);
-//
-//            ActionBar actionBar = ((AppCompatActivity) getActivity()).getSupportActionBar();
-//            actionBar.setDisplayShowTitleEnabled(true);
-//            actionBar.setDisplayHomeAsUpEnabled(true);
-//            getActivity().setTitle(R.string.stats);
-//        }
-
+        }
 
         mSwipeToRefreshHelper = new SwipeToRefreshHelper(getActivity(), (CustomSwipeRefreshLayout) view.findViewById(R.id
                 .ptr_layout),
@@ -210,16 +217,19 @@ public class StatsFragment extends Fragment implements ScrollViewExt.ScrollViewL
         // if its internal datamodel is empty.
         createNestedFragments(false, view);
 
-        mSpinner = (Spinner) view.findViewById(R.id.time_frame_spinner);
+//        mSpinner = (Spinner) view.findViewById(R.id.time_frame_spinner);
 
-        //changing spinner arrow color to mach custom spinner at ReaderPostListFragment
-        Drawable spinnerBackground = mSpinner.getBackground();
-        spinnerBackground.setColorFilter(ContextCompat.getColor(getActivity(), R.color.grey), PorterDuff.Mode.SRC_ATOP);
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.JELLY_BEAN) {
-            mSpinner.setBackgroundDrawable(spinnerBackground);
-        } else {
-            mSpinner.setBackground(spinnerBackground);
-        }
+        View spinner = inflater.inflate(R.layout.toolbar_spinner, toolbar, true);
+        mSpinner = (Spinner) spinner.findViewById(R.id.action_bar_spinner);
+
+//        //changing spinner arrow color to mach custom spinner at ReaderPostListFragment
+//        Drawable spinnerBackground = mSpinner.getBackground();
+//        spinnerBackground.setColorFilter(ContextCompat.getColor(getActivity(), R.color.grey), PorterDuff.Mode.SRC_ATOP);
+//        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.JELLY_BEAN) {
+//            mSpinner.setBackgroundDrawable(spinnerBackground);
+//        } else {
+//            mSpinner.setBackground(spinnerBackground);
+//        }
 
         mTimeframeSpinnerAdapter = new TimeframeSpinnerAdapter(getActivity(), timeframes);
 
@@ -558,7 +568,7 @@ public class StatsFragment extends Fragment implements ScrollViewExt.ScrollViewL
         super.onActivityResult(requestCode, resultCode, data);
         if (requestCode == SignInActivity.REQUEST_CODE) {
             if (resultCode == Activity.RESULT_CANCELED) {
-               showErrorView();
+                showErrorView();
             }
             mResultCode = resultCode;
             final Blog currentBlog = WordPress.getBlog(mLocalBlogID);
@@ -744,7 +754,6 @@ public class StatsFragment extends Fragment implements ScrollViewExt.ScrollViewL
             return false;
         }
 
-
         final String blogId = currentBlog.getDotComBlogId();
 
         // blogId is always available for dotcom blogs. It could be null on Jetpack blogs...
@@ -893,12 +902,17 @@ public class StatsFragment extends Fragment implements ScrollViewExt.ScrollViewL
         public View getView(int position, View convertView, ViewGroup parent) {
             final View view;
             if (convertView == null) {
-                view = mInflater.inflate(R.layout.reader_tag_toolbar_menu_item, parent, false);
+                view = mInflater.inflate(R.layout.toolbar_spinner_item, parent, false);
             } else {
                 view = convertView;
             }
 
             final TextView text = (TextView) view.findViewById(R.id.text);
+
+            if (DualPaneHelper.isInDualPaneMode(StatsFragment.this)) {
+                text.setTextColor(ContextCompat.getColor(getActivity(), R.color.black));
+            }
+
             StatsTimeframe selectedTimeframe = (StatsTimeframe) getItem(position);
             text.setText(selectedTimeframe.getLabel());
             return view;
