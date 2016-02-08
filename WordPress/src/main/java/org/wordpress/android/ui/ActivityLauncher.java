@@ -34,6 +34,7 @@ import org.wordpress.android.ui.prefs.SiteSettingsInterface;
 import org.wordpress.android.ui.prefs.notifications.NotificationsSettingsActivity;
 import org.wordpress.android.ui.stats.StatsActivity;
 import org.wordpress.android.ui.stats.StatsConstants;
+import org.wordpress.android.ui.stats.StatsFragment;
 import org.wordpress.android.ui.stats.StatsSingleItemDetailsActivity;
 import org.wordpress.android.ui.stats.models.PostModel;
 import org.wordpress.android.ui.themes.ThemeBrowserActivity;
@@ -67,12 +68,23 @@ public class ActivityLauncher {
         AnalyticsUtils.trackWithCurrentBlogDetails(AnalyticsTracker.Stat.OPENED_VIEW_SITE);
     }
 
-    public static void viewBlogStats(Context context, int blogLocalTableId) {
+    public static void viewBlogStats(Context context, int blogLocalTableId, @Nullable DualPaneHost dualPaneHost) {
         if (blogLocalTableId == 0) return;
 
         Intent intent = new Intent(context, StatsActivity.class);
         intent.putExtra(StatsActivity.ARG_LOCAL_TABLE_BLOG_ID, blogLocalTableId);
-        slideInFromRight(context, intent);
+
+        if (dualPaneHost != null) {
+            showDualPaneContent(context,
+                    StatsFragment.class,
+                    "stats_fragment",
+                    intent,
+                    dualPaneHost,
+                    null);
+        }else{
+            slideInFromRight(context, intent);
+        }
+
     }
 
     public static void viewCurrentBlogPosts(Context context, @Nullable DualPaneHost dualPaneHost) {

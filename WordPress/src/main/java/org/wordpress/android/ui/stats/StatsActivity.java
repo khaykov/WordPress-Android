@@ -2,12 +2,12 @@ package org.wordpress.android.ui.stats;
 
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
-import android.support.v7.app.AppCompatActivity;
 import android.widget.Toast;
 
 import org.wordpress.android.R;
 import org.wordpress.android.WordPress;
 import org.wordpress.android.ui.ActivityLauncher;
+import org.wordpress.android.ui.DualPaneContentActivity;
 
 /**
  * The native stats activity
@@ -15,11 +15,16 @@ import org.wordpress.android.ui.ActivityLauncher;
  * By pressing a spinner on the action bar, the user can select which timeframe they wish to see.
  * </p>
  */
-public class StatsActivity extends AppCompatActivity {
+public class StatsActivity extends DualPaneContentActivity {
 
     public static final String ARG_LOCAL_TABLE_BLOG_ID = "ARG_LOCAL_TABLE_BLOG_ID";
     public static final String ARG_LAUNCHED_FROM = "ARG_LAUNCHED_FROM";
     public static final String ARG_DESIRED_TIMEFRAME = "ARG_DESIRED_TIMEFRAME";
+
+    @Override
+    protected String getContentFragmentTag() {
+        return "stats_fragment";
+    }
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -33,8 +38,13 @@ public class StatsActivity extends AppCompatActivity {
 
         setContentView(R.layout.stats_activity);
 
-        Fragment statsFragment = Fragment.instantiate(this, StatsFragment.class.getName(), getIntent().getExtras());
-        getSupportFragmentManager().beginTransaction().replace(R.id.fragment_container, statsFragment).commit();
+        if (savedInstanceState == null) {
+            Fragment statsFragment = Fragment.instantiate(this, StatsFragment.class.getName(), getIntent().getExtras());
+            statsFragment.setInitialSavedState(getFragmentSavedState());
+
+            getSupportFragmentManager().beginTransaction().replace(R.id.fragment_container, statsFragment,
+                    getContentFragmentTag()).commit();
+        }
     }
 
     @Override

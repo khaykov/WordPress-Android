@@ -185,7 +185,7 @@ public class NotificationsDetailActivity extends AppCompatActivity implements
             intent.putExtra(StatsViewAllActivity.ARG_STATS_VIEW_ALL_TITLE, getString(R.string.stats_view_followers));
             startActivity(intent);
         } else {
-            ActivityLauncher.viewBlogStats(this, localTableSiteId);
+            ActivityLauncher.viewBlogStats(this, localTableSiteId, null);
         }
     }
 
