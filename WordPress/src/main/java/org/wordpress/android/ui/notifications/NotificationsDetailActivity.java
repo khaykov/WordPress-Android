@@ -25,7 +25,7 @@ import org.wordpress.android.ui.notifications.utils.SimperiumUtils;
 import org.wordpress.android.ui.reader.ReaderActivityLauncher;
 import org.wordpress.android.ui.reader.ReaderPostDetailFragment;
 import org.wordpress.android.ui.stats.StatsAbstractFragment;
-import org.wordpress.android.ui.stats.StatsActivity;
+import org.wordpress.android.ui.stats.StatsFragment;
 import org.wordpress.android.ui.stats.StatsTimeframe;
 import org.wordpress.android.ui.stats.StatsViewAllActivity;
 import org.wordpress.android.ui.stats.StatsViewType;
@@ -181,7 +181,7 @@ public class NotificationsDetailActivity extends AppCompatActivity implements
             intent.putExtra(StatsAbstractFragment.ARGS_VIEW_TYPE, StatsViewType.FOLLOWERS);
             intent.putExtra(StatsAbstractFragment.ARGS_TIMEFRAME, StatsTimeframe.DAY);
             intent.putExtra(StatsAbstractFragment.ARGS_SELECTED_DATE, "");
-            intent.putExtra(StatsActivity.ARG_LOCAL_TABLE_BLOG_ID, localTableSiteId);
+            intent.putExtra(StatsFragment.ARG_LOCAL_TABLE_BLOG_ID, localTableSiteId);
             intent.putExtra(StatsViewAllActivity.ARG_STATS_VIEW_ALL_TITLE, getString(R.string.stats_view_followers));
             startActivity(intent);
         } else {

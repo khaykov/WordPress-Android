@@ -17,9 +17,7 @@ import org.wordpress.android.ui.DualPaneContentActivity;
  */
 public class StatsActivity extends DualPaneContentActivity {
 
-    public static final String ARG_LOCAL_TABLE_BLOG_ID = "ARG_LOCAL_TABLE_BLOG_ID";
-    public static final String ARG_LAUNCHED_FROM = "ARG_LAUNCHED_FROM";
-    public static final String ARG_DESIRED_TIMEFRAME = "ARG_DESIRED_TIMEFRAME";
+
 
     @Override
     protected String getContentFragmentTag() {

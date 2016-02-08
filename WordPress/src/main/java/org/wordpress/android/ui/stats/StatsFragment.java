@@ -5,7 +5,6 @@ import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
-import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.support.annotation.Nullable;
@@ -36,6 +35,7 @@ import org.wordpress.android.models.Blog;
 import org.wordpress.android.ui.ActivityId;
 import org.wordpress.android.ui.WPWebViewActivity;
 import org.wordpress.android.ui.accounts.SignInActivity;
+import org.wordpress.android.ui.main.MySiteFragment;
 import org.wordpress.android.ui.prefs.AppPrefs;
 import org.wordpress.android.util.AnalyticsUtils;
 import org.wordpress.android.util.AppLog;
@@ -58,17 +58,27 @@ import de.greenrobot.event.EventBus;
 public class StatsFragment extends Fragment implements ScrollViewExt.ScrollViewListener,
         StatsVisitorsAndViewsFragment.OnDateChangeListener,
         StatsVisitorsAndViewsFragment.OnOverviewItemChangeListener,
-        StatsInsightsTodayFragment.OnInsightsTodayClickListener {
+        StatsInsightsTodayFragment.OnInsightsTodayClickListener,
+        MySiteFragment.MySiteContentFragment {
 
     private static final String SAVED_WP_LOGIN_STATE = "SAVED_WP_LOGIN_STATE";
     private static final String SAVED_STATS_TIMEFRAME = "SAVED_STATS_TIMEFRAME";
     private static final String SAVED_STATS_REQUESTED_DATE = "SAVED_STATS_REQUESTED_DATE";
     private static final String SAVED_STATS_SCROLL_POSITION = "SAVED_STATS_SCROLL_POSITION";
 
+    public static final String ARG_LOCAL_TABLE_BLOG_ID = "ARG_LOCAL_TABLE_BLOG_ID";
+    public static final String ARG_LAUNCHED_FROM = "ARG_LAUNCHED_FROM";
+    public static final String ARG_DESIRED_TIMEFRAME = "ARG_DESIRED_TIMEFRAME";
+
     private Spinner mSpinner;
     private ScrollViewExt mOuterScrollView;
 
     private static final int REQUEST_JETPACK = 7000;
+
+    @Override
+    public int getMatchingRowViewId() {
+        return R.id.row_stats;
+    }
 
     public enum StatsLaunchedFrom {
         STATS_WIDGET,
@@ -95,23 +105,24 @@ public class StatsFragment extends Fragment implements ScrollViewExt.ScrollViewL
 
         if (savedInstanceState != null) {
             mResultCode = savedInstanceState.getInt(SAVED_WP_LOGIN_STATE);
-            mLocalBlogID = savedInstanceState.getInt(StatsActivity.ARG_LOCAL_TABLE_BLOG_ID);
+            mLocalBlogID = savedInstanceState.getInt(ARG_LOCAL_TABLE_BLOG_ID);
             mCurrentTimeframe = (StatsTimeframe) savedInstanceState.getSerializable(SAVED_STATS_TIMEFRAME);
             mRequestedDate = savedInstanceState.getString(SAVED_STATS_REQUESTED_DATE);
         } else if (getArguments() != null) {
-            mLocalBlogID = getArguments().getInt(StatsActivity.ARG_LOCAL_TABLE_BLOG_ID, -1);
+            mLocalBlogID = getArguments().getInt(ARG_LOCAL_TABLE_BLOG_ID, -1);
+
             if (getArguments().containsKey(SAVED_STATS_TIMEFRAME)) {
                 mCurrentTimeframe = (StatsTimeframe) getArguments().getSerializable(SAVED_STATS_TIMEFRAME);
-            } else if (getArguments().containsKey(StatsActivity.ARG_DESIRED_TIMEFRAME)) {
-                mCurrentTimeframe = (StatsTimeframe) getArguments().getSerializable(StatsActivity.ARG_DESIRED_TIMEFRAME);
+            } else if (getArguments().containsKey(ARG_DESIRED_TIMEFRAME)) {
+                mCurrentTimeframe = (StatsTimeframe) getArguments().getSerializable(ARG_DESIRED_TIMEFRAME);
             } else {
                 // Read the value from app preferences here. Default to 0 - Insights
                 mCurrentTimeframe = AppPrefs.getStatsTimeframe();
             }
             mRequestedDate = StatsUtils.getCurrentDateTZ(mLocalBlogID);
 
-            if (getArguments().containsKey(StatsActivity.ARG_LAUNCHED_FROM)) {
-                StatsLaunchedFrom from = (StatsLaunchedFrom) getArguments().getSerializable(StatsActivity.ARG_LAUNCHED_FROM);
+            if (getArguments().containsKey(ARG_LAUNCHED_FROM)) {
+                StatsLaunchedFrom from = (StatsLaunchedFrom) getArguments().getSerializable(ARG_LAUNCHED_FROM);
                 if (from == StatsLaunchedFrom.STATS_WIDGET) {
                     AnalyticsUtils.trackWithBlogDetails(AnalyticsTracker.Stat.STATS_WIDGET_TAPPED, WordPress.getBlog
                             (mLocalBlogID));
@@ -144,8 +155,8 @@ public class StatsFragment extends Fragment implements ScrollViewExt.ScrollViewL
         View view = inflater.inflate(R.layout.stats_fragment, container, false);
 
         Toolbar toolbar = (Toolbar) view.findViewById(R.id.toolbar);
-        if (DualPaneHelper.isInDualPaneMode(this)) {
 
+        if (DualPaneHelper.isInDualPaneMode(this)) {
 
             if (DualPaneHelper.isInDualPaneMode(this)) {
                 ScrollView.LayoutParams lp = (ScrollView.LayoutParams) view.findViewById(R.id.content_container)
@@ -154,25 +165,20 @@ public class StatsFragment extends Fragment implements ScrollViewExt.ScrollViewL
                 lp.rightMargin = getResources().getDimensionPixelSize(R.dimen.content_margin_normal);
             }
 
-
             toolbar.setBackgroundColor(ContextCompat.getColor(getActivity(), R.color.white));
-//            toolbar.setNavigationIcon(null);
 
             toolbar.setContentInsetsAbsolute(getResources().getDimensionPixelSize(R.dimen.content_margin_normal), 0);
             toolbar.setContentInsetsRelative(getResources().getDimensionPixelSize(R.dimen.content_margin_normal), 0);
 
             LinearLayout.LayoutParams layoutParams = (LinearLayout.LayoutParams) toolbar.getLayoutParams();
             layoutParams.topMargin = getResources().getDimensionPixelSize(R.dimen.content_margin_normal);
-//            layoutParams.bottomMargin = getResources().getDimensionPixelSize(R.dimen.content_margin_normal);
-            layoutParams.leftMargin = getResources().getDimensionPixelSize(R.dimen.content_margin_normal);
-            layoutParams.rightMargin = getResources().getDimensionPixelSize(R.dimen.content_margin_normal) +3;
-//            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-//                toolbar.setElevation(getResources().getDimensionPixelSize(R.dimen.card_elevation));
-//            }
-        }
-        else{
+            layoutParams.leftMargin = getResources().getDimensionPixelSize(R.dimen.margin_small);
+            layoutParams.rightMargin = getResources().getDimensionPixelSize(R.dimen.margin_small);
+        } else {
+
             ((AppCompatActivity) getActivity()).setSupportActionBar(toolbar);
             ActionBar actionBar = ((AppCompatActivity) getActivity()).getSupportActionBar();
+
             actionBar.setDisplayShowTitleEnabled(false);
             actionBar.setDisplayHomeAsUpEnabled(true);
         }
@@ -209,7 +215,7 @@ public class StatsFragment extends Fragment implements ScrollViewExt.ScrollViewL
         if (currentBlog == null) {
             AppLog.e(AppLog.T.STATS, "The blog with local_blog_id " + mLocalBlogID + " cannot be loaded from the DB.");
             Toast.makeText(getActivity(), R.string.stats_no_blog, Toast.LENGTH_LONG).show();
-            showErrorView();
+            finishFragment();
         }
 
         // create the fragments without forcing the re-creation. If the activity is restarted fragments can already
@@ -217,19 +223,8 @@ public class StatsFragment extends Fragment implements ScrollViewExt.ScrollViewL
         // if its internal datamodel is empty.
         createNestedFragments(false, view);
 
-//        mSpinner = (Spinner) view.findViewById(R.id.time_frame_spinner);
-
         View spinner = inflater.inflate(R.layout.toolbar_spinner, toolbar, true);
         mSpinner = (Spinner) spinner.findViewById(R.id.action_bar_spinner);
-
-//        //changing spinner arrow color to mach custom spinner at ReaderPostListFragment
-//        Drawable spinnerBackground = mSpinner.getBackground();
-//        spinnerBackground.setColorFilter(ContextCompat.getColor(getActivity(), R.color.grey), PorterDuff.Mode.SRC_ATOP);
-//        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.JELLY_BEAN) {
-//            mSpinner.setBackgroundDrawable(spinnerBackground);
-//        } else {
-//            mSpinner.setBackground(spinnerBackground);
-//        }
 
         mTimeframeSpinnerAdapter = new TimeframeSpinnerAdapter(getActivity(), timeframes);
 
@@ -270,7 +265,6 @@ public class StatsFragment extends Fragment implements ScrollViewExt.ScrollViewL
                 // nop
             }
         });
-//        }
 
         selectCurrentTimeframeInActionBar();
 
@@ -362,7 +356,7 @@ public class StatsFragment extends Fragment implements ScrollViewExt.ScrollViewL
     @Override
     public void onSaveInstanceState(Bundle outState) {
         outState.putInt(SAVED_WP_LOGIN_STATE, mResultCode);
-        outState.putInt(StatsActivity.ARG_LOCAL_TABLE_BLOG_ID, mLocalBlogID);
+        outState.putInt(StatsFragment.ARG_LOCAL_TABLE_BLOG_ID, mLocalBlogID);
         outState.putSerializable(SAVED_STATS_TIMEFRAME, mCurrentTimeframe);
         outState.putString(SAVED_STATS_REQUESTED_DATE, mRequestedDate);
         if (mOuterScrollView.getScrollY() != 0) {
@@ -556,11 +550,19 @@ public class StatsFragment extends Fragment implements ScrollViewExt.ScrollViewL
         mResultCode = Activity.RESULT_CANCELED;
         Intent signInIntent = new Intent(getActivity(), SignInActivity.class);
         signInIntent.putExtra(SignInActivity.ARG_JETPACK_SITE_AUTH, mLocalBlogID);
-        signInIntent.putExtra(
-                SignInActivity.ARG_JETPACK_MESSAGE_AUTH,
-                getString(R.string.stats_sign_in_jetpack_different_com_account)
-        );
-        startActivityForResult(signInIntent, SignInActivity.REQUEST_CODE);
+        signInIntent.putExtra(SignInActivity.ARG_JETPACK_MESSAGE_AUTH,
+                getString(R.string.stats_sign_in_jetpack_different_com_account));
+
+        if (DualPaneHelper.isInDualPaneMode(StatsFragment.this)) {
+            getParentFragment().startActivityForResult(signInIntent, SignInActivity.REQUEST_CODE);
+        } else {
+            startActivityForResult(signInIntent, SignInActivity.REQUEST_CODE);
+        }
+    }
+
+    @Override
+    public void onActivityCreated(@Nullable Bundle savedInstanceState) {
+        super.onActivityCreated(savedInstanceState);
     }
 
     @Override
@@ -568,7 +570,7 @@ public class StatsFragment extends Fragment implements ScrollViewExt.ScrollViewL
         super.onActivityResult(requestCode, resultCode, data);
         if (requestCode == SignInActivity.REQUEST_CODE) {
             if (resultCode == Activity.RESULT_CANCELED) {
-                showErrorView();
+                finishFragment();
             }
             mResultCode = resultCode;
             final Blog currentBlog = WordPress.getBlog(mLocalBlogID);
@@ -676,14 +678,20 @@ public class StatsFragment extends Fragment implements ScrollViewExt.ScrollViewL
                     jetpackIntent.putExtra(WPWebViewActivity.AUTHENTICATION_PASSWD, currentBlog.getPassword());
                     jetpackIntent.putExtra(WPWebViewActivity.URL_TO_LOAD, stringToLoad);
                     jetpackIntent.putExtra(WPWebViewActivity.AUTHENTICATION_URL, authURL);
-                    startActivityForResult(jetpackIntent, REQUEST_JETPACK);
+
+                    if (DualPaneHelper.isInDualPaneMode(StatsFragment.this)) {
+                        getParentFragment().startActivityForResult(jetpackIntent, REQUEST_JETPACK);
+                    } else {
+                        startActivityForResult(jetpackIntent, REQUEST_JETPACK);
+                    }
+
                     AnalyticsTracker.track(AnalyticsTracker.Stat.STATS_SELECTED_INSTALL_JETPACK);
                 }
             });
             builder.setNegativeButton(R.string.no, new DialogInterface.OnClickListener() {
                 public void onClick(DialogInterface dialog, int id) {
                     // User cancelled the dialog. Hide Stats.
-                    showErrorView();
+                    finishFragment();
                 }
             });
         } else {
@@ -784,7 +792,7 @@ public class StatsFragment extends Fragment implements ScrollViewExt.ScrollViewL
                 // blodID cannot be null on dotcom blogs.
                 Toast.makeText(getActivity(), R.string.error_refresh_stats, Toast.LENGTH_LONG).show();
                 AppLog.e(AppLog.T.STATS, "blogID is null for a wpcom blog!! " + currentBlog.getHomeURL());
-                showErrorView();
+                finishFragment();
             }
         }
 
@@ -799,8 +807,16 @@ public class StatsFragment extends Fragment implements ScrollViewExt.ScrollViewL
         return true;
     }
 
-    private void showErrorView() {
-
+    private void finishFragment() {
+        if (DualPaneHelper.isInDualPaneMode(this)) {
+            //we are telling MySite fragment that this fragment needs to be removed from host due to some error
+            if (DualPaneHelper.isInDualPaneMode(StatsFragment.this)) {
+                //Sticky event is used because if error
+                EventBus.getDefault().postSticky(new MySiteFragment.ContentFragmentErrorEvent());
+            }
+        } else {
+            getActivity().finish();
+        }
     }
 
     @SuppressWarnings("unused")

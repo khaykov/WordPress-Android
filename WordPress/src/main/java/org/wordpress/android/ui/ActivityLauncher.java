@@ -72,7 +72,7 @@ public class ActivityLauncher {
         if (blogLocalTableId == 0) return;
 
         Intent intent = new Intent(context, StatsActivity.class);
-        intent.putExtra(StatsActivity.ARG_LOCAL_TABLE_BLOG_ID, blogLocalTableId);
+        intent.putExtra(StatsFragment.ARG_LOCAL_TABLE_BLOG_ID, blogLocalTableId);
 
         if (dualPaneHost != null) {
             showDualPaneContent(context,
