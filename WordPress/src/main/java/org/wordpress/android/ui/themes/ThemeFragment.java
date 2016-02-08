@@ -5,7 +5,6 @@ import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.AsyncTask;
-import android.os.Build;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
@@ -103,11 +102,7 @@ public class ThemeFragment extends Fragment implements ThemeBrowserFragment.Them
     @Nullable
     @Override
     public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
-        View view = inflater.inflate(R.layout.theme_fragment, container, false);
-
-        view.findViewById(R.id.toolbar).setVisibility(View.GONE);
-
-        return view;
+        return inflater.inflate(R.layout.theme_fragment, container, false);
     }
 
     @Override
@@ -115,10 +110,24 @@ public class ThemeFragment extends Fragment implements ThemeBrowserFragment.Them
         super.onActivityCreated(savedInstanceState);
         if (savedInstanceState == null) {
             AnalyticsUtils.trackWithCurrentBlogDetails(AnalyticsTracker.Stat.THEMES_ACCESSED_THEMES_BROWSER);
-            mThemeBrowserFragment = new ThemeBrowserFragment();
-            mThemeSearchFragment = new ThemeSearchFragment();
             addBrowserFragment();
         }
+    }
+
+    private ThemeBrowserFragment getThemeBrowserFragment() {
+        mThemeBrowserFragment = (ThemeBrowserFragment) getChildFragmentManager().findFragmentByTag(TAG_BROWSE_FRAGMENT);
+        if (mThemeBrowserFragment == null) {
+            mThemeBrowserFragment = new ThemeBrowserFragment();
+        }
+        return mThemeBrowserFragment;
+    }
+
+    private ThemeSearchFragment getThemeSearchFragment() {
+        mThemeSearchFragment = (ThemeSearchFragment) getChildFragmentManager().findFragmentByTag(TAG_SEARCH_FRAGMENT);
+        if (mThemeSearchFragment == null) {
+            mThemeSearchFragment = new ThemeSearchFragment();
+        }
+        return mThemeSearchFragment;
     }
 
     @Override
@@ -325,15 +334,10 @@ public class ThemeFragment extends Fragment implements ThemeBrowserFragment.Them
         ((AppCompatActivity) getActivity()).setSupportActionBar(toolbarSearch);
 
         if (DualPaneHelper.isInDualPaneMode(this)) {
-
             LinearLayout.LayoutParams layoutParams = (LinearLayout.LayoutParams) toolbarSearch.getLayoutParams();
             layoutParams.topMargin = getResources().getDimensionPixelSize(R.dimen.content_margin_normal);
-            layoutParams.bottomMargin = getResources().getDimensionPixelSize(R.dimen.content_margin_normal);
             layoutParams.leftMargin = getResources().getDimensionPixelSize(R.dimen.margin_small);
-            layoutParams.rightMargin = getResources().getDimensionPixelSize(R.dimen.content_margin_normal);
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                toolbarSearch.setElevation(getResources().getDimensionPixelSize(R.dimen.card_elevation));
-            }
+            layoutParams.rightMargin = getResources().getDimensionPixelSize(R.dimen.margin_small);
         }
 
         toolbarSearch.setTitle("");
@@ -341,31 +345,17 @@ public class ThemeFragment extends Fragment implements ThemeBrowserFragment.Them
         getView().findViewById(R.id.toolbar_search).setVisibility(View.VISIBLE);
     }
 
-    private void hideSearchToolbar() {
-        if (!DualPaneHelper.isInDualPaneMode(this)) {
-            getView().findViewById(R.id.toolbar).setVisibility(View.VISIBLE);
-        }
-
-        getView().findViewById(R.id.toolbar_search).setVisibility(View.GONE);
-    }
-
     private void addBrowserFragment() {
-        if (mThemeBrowserFragment == null) {
-            mThemeBrowserFragment = new ThemeBrowserFragment();
-        }
         showToolbar();
         FragmentTransaction fragmentTransaction = getChildFragmentManager().beginTransaction();
-        fragmentTransaction.add(R.id.fragment_container, mThemeBrowserFragment);
+        fragmentTransaction.add(R.id.fragment_container, getThemeBrowserFragment(), TAG_BROWSE_FRAGMENT);
         fragmentTransaction.commit();
     }
 
     private void addSearchFragment() {
-        if (mThemeSearchFragment == null) {
-            mThemeSearchFragment = new ThemeSearchFragment();
-        }
         showSearchToolbar();
         FragmentTransaction fragmentTransaction = getChildFragmentManager().beginTransaction();
-        fragmentTransaction.replace(R.id.fragment_container, mThemeSearchFragment);
+        fragmentTransaction.replace(R.id.fragment_container, getThemeSearchFragment(), TAG_SEARCH_FRAGMENT);
         fragmentTransaction.addToBackStack(null);
         fragmentTransaction.commit();
     }
@@ -450,10 +440,9 @@ public class ThemeFragment extends Fragment implements ThemeBrowserFragment.Them
                         break;
                 }
 
-
-                if(DualPaneHelper.isInDualPaneMode(this)){
+                if (DualPaneHelper.isInDualPaneMode(this)) {
                     ThemeWebActivity.openTheme(getParentFragment(), themeId, type, isCurrentTheme);
-                }else{
+                } else {
                     ThemeWebActivity.openTheme(this, themeId, type, isCurrentTheme);
                 }
 
@@ -541,6 +530,7 @@ public class ThemeFragment extends Fragment implements ThemeBrowserFragment.Them
 
         @Override
         protected void onPostExecute(final ArrayList<Theme> result) {
+            if (!isAdded()) return;
             getActivity().runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
