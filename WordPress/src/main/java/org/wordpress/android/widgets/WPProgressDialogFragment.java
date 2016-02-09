@@ -3,12 +3,13 @@ package org.wordpress.android.widgets;
 import android.app.Dialog;
 import android.app.ProgressDialog;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
 import android.support.v4.app.DialogFragment;
 
 import org.wordpress.android.util.StringUtils;
 
 /**
- * Simple progress dialog fragment.
+ * Simple indeterminate progress dialog fragment.
  */
 public class WPProgressDialogFragment extends DialogFragment {
 
@@ -23,12 +24,7 @@ public class WPProgressDialogFragment extends DialogFragment {
         return fragment;
     }
 
-    @Override
-    public void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setCancelable(false);
-    }
-
+    @NonNull
     @Override
     public Dialog onCreateDialog(Bundle savedInstanceState) {
         Bundle bundle = getArguments();

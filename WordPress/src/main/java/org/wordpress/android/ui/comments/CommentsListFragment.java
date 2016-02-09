@@ -84,7 +84,6 @@ public class CommentsListFragment extends Fragment implements
 
     private static final int COMMENTS_PER_PAGE = 30;
 
-    @SuppressWarnings("unchecked")  //we know what we are passing as Serializable
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -129,7 +128,6 @@ public class CommentsListFragment extends Fragment implements
 
         if (DualPaneHelper.isInDualPaneMode(this)) {
             //Use normal margin (instead of wide, tablet one) while in dual pane mode.
-            //Setting margin through different resource qualifiers in this case is more complicated and harder to follow.
             spacingHorizontal = getResources().getDimensionPixelSize(R.dimen.content_margin_normal);
         } else {
             spacingHorizontal = getResources().getDimensionPixelSize(R.dimen.content_margin);
@@ -336,7 +334,9 @@ public class CommentsListFragment extends Fragment implements
     }
 
     public void setCommentIsModerating(long commentId, boolean isModerating) {
-        if (!hasAdapter()) return;
+        if (!hasAdapter()) {
+            return;
+        }
 
         if (isModerating) {
             getCommentsAdapter().addModeratingCommentId(commentId);
@@ -434,7 +434,7 @@ public class CommentsListFragment extends Fragment implements
             mCanLoadMoreComments = (comments != null && comments.size() > 0);
 
             // result will be null on error OR if no more comments exists
-            if (comments == null && !getActivity().isFinishing() && mErrorType != ErrorType.NO_ERROR) {
+            if (comments == null && mErrorType != ErrorType.NO_ERROR) {
                 switch (mErrorType) {
                     case UNAUTHORIZED:
                         if (mEmptyView == null || mEmptyView.getVisibility() != View.VISIBLE) {
@@ -449,12 +449,10 @@ public class CommentsListFragment extends Fragment implements
                 }
             }
 
-            if (isAdded()) {
-                if (comments != null && comments.size() > 0) {
-                    getCommentsAdapter().loadComments();
-                } else {
-                    updateEmptyView(EmptyViewMessageType.NO_CONTENT);
-                }
+            if (comments != null && comments.size() > 0) {
+                getCommentsAdapter().loadComments();
+            } else {
+                updateEmptyView(EmptyViewMessageType.NO_CONTENT);
             }
         }
     }
@@ -655,7 +653,7 @@ public class CommentsListFragment extends Fragment implements
     public void onCommentLongPressed(int position, View view) {
         // enable CAB if it's not already enabled
         if (mActionMode == null) {
-            if (getActivity() instanceof AppCompatActivity) {
+            if (isAdded() && getActivity() instanceof AppCompatActivity) {
                 ((AppCompatActivity) getActivity()).startSupportActionMode(new ActionModeCallback());
                 getCommentsAdapter().setEnableSelection(true);
                 getCommentsAdapter().setItemSelected(position, true, view);
@@ -712,8 +710,7 @@ public class CommentsListFragment extends Fragment implements
     }
 
     private boolean shouldRestoreCab() {
-        return getCommentsAdapter() != null && !getCommentsAdapter().getSelectedCommentsId().isEmpty() && mActionMode ==
-                null;
+        return hasAdapter() && !getCommentsAdapter().getSelectedCommentsId().isEmpty() && mActionMode == null;
     }
 
     private void restoreCab() {
@@ -865,6 +862,7 @@ public class CommentsListFragment extends Fragment implements
 
     public void onEventMainThread(CommentEvents.CommentModerationFinishedEvent event) {
         if (!isAdded()) return;
+
         EventBus.getDefault().removeStickyEvent(CommentEvents.CommentModerationFinishedEvent.class);
 
         setCommentIsModerating(event.getCommentId(), false);

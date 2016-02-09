@@ -134,7 +134,6 @@ class CommentAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
         mAvatarSz = context.getResources().getDimensionPixelSize(R.dimen.avatar_sz_medium);
 
-
         setHasStableIds(true);
     }
 
@@ -364,7 +363,7 @@ class CommentAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     }
 
     public boolean isModeratingCommentId(long commentId) {
-        return mModeratingCommentsIds.size() > 0 && mModeratingCommentsIds.contains(commentId);
+        return mModeratingCommentsIds.contains(commentId);
     }
 
     private int indexOfCommentId(long commentId) {
@@ -477,12 +476,10 @@ class CommentAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     }
 
     public CommentAdapterState saveAdapterState() {
-        CommentAdapterState state = new CommentAdapterState(
+        return new CommentAdapterState(
                 mTrashedCommentsId,
                 mSelectedCommentsId,
                 mModeratingCommentsIds);
-
-        return state;
     }
 
     private void removeTrashedComments() {
@@ -498,7 +495,7 @@ class CommentAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
     public void setInitialState(CommentAdapterState adapterState) {
         if (adapterState == null) return;
-        //we might have preselected comments when initializing adapter (ex. after configuration change)
+
         if (adapterState.hasSelectedComments()) {
             mSelectedCommentsId.addAll(adapterState.getSelectedComments());
             setEnableSelection(true);

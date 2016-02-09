@@ -24,7 +24,7 @@ public class CommentAdapterState implements Parcelable {
                                @NonNull HashSet<Long> moderatedCommentsId) {
 
         // I had tons of problems with passing HashSet as serializable
-        // so instead they are converting  to primitive array's before going into Parcel
+        // so instead they are converted to primitive array before going into Parcel
         mTrashedCommentId = ArrayUtils.toPrimitive(trashedCommentId.toArray(new Long[trashedCommentId.size()]));
         mSelectedComments = ArrayUtils.toPrimitive(selectedComments.toArray(new Long[selectedComments.size()]));
         mModeratedCommentsId = ArrayUtils.toPrimitive(moderatedCommentsId.toArray(new Long[moderatedCommentsId.size()]));
