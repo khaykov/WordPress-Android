@@ -1,5 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
-
 <!--
     appears below the last item in the page list
 -->
@@ -7,7 +6,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/endlist_indicator"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content"
+    android:layout_height="@dimen/endlist_indicator_height_default"
     android:orientation="horizontal"
     tools:background="@color/white">
 
