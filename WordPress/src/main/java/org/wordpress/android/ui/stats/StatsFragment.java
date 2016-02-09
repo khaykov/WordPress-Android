@@ -699,6 +699,7 @@ public class StatsFragment extends Fragment implements ScrollViewExt.ScrollViewL
                     .setTitle(getString(R.string.jetpack_not_found));
             builder.setPositiveButton(R.string.yes, null);
         }
+        builder.setCancelable(false);
         builder.create().show();
     }
 
