@@ -76,6 +76,10 @@ public class MySiteFragment extends Fragment implements WPMainActivity.OnScrollT
         int getMatchingRowViewId();
     }
 
+    // used to notify MySiteFragment that content fragment encountered error and was killed
+    public static class ContentFragmentFinishedOnError {
+    }
+
     public static MySiteFragment newInstance() {
         return new MySiteFragment();
     }
@@ -264,7 +268,8 @@ public class MySiteFragment extends Fragment implements WPMainActivity.OnScrollT
                     ActivityLauncher.viewCurrentSite(getActivity());
                     break;
                 case R.id.row_stats:
-                    ActivityLauncher.viewBlogStats(getActivity(), mBlogLocalId);
+                    ActivityLauncher.viewBlogStats(getActivity(), mBlogLocalId, DualPaneHelper.getDualPaneHost
+                            (MySiteFragment.this));
                     break;
                 case R.id.row_blog_posts:
                     ActivityLauncher.viewCurrentBlogPosts(getActivity(),
@@ -438,7 +443,7 @@ public class MySiteFragment extends Fragment implements WPMainActivity.OnScrollT
     @Override
     public void onStart() {
         super.onStart();
-        EventBus.getDefault().register(this);
+        EventBus.getDefault().registerSticky(this);
     }
 
     /*
@@ -463,5 +468,13 @@ public class MySiteFragment extends Fragment implements WPMainActivity.OnScrollT
         super.onSaveInstanceState(outState);
         outState.putInt(SELECTED_ROW_VIEW_ID, mSelectedRowViewId);
         outState.putInt(PREVIOUS_BLOG_LOCAL_ID, mBlogLocalId);
+    }
+
+    @SuppressWarnings("unused")
+    public void onEventMainThread(ContentFragmentFinishedOnError event) {
+        EventBus.getDefault().removeStickyEvent(ContentFragmentFinishedOnError.class);
+
+        resetRowSelection();
+        selectDefaultRow();
     }
 }

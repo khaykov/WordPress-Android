@@ -1,6 +1,6 @@
 package org.wordpress.android.ui.stats;
 
-import android.app.Activity;
+import android.content.Context;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.view.LayoutInflater;
@@ -30,12 +30,16 @@ public class StatsInsightsTodayFragment extends StatsAbstractInsightsFragment {
     private OnInsightsTodayClickListener mListener;
 
     @Override
-    public void onAttach(Activity activity) {
-        super.onAttach(activity);
-        try {
-            mListener = (OnInsightsTodayClickListener) activity;
-        } catch (ClassCastException e) {
-            throw new ClassCastException(activity.toString() + " must implement OnInsightsTodayClickListener");
+    public void onAttach(Context context) {
+        super.onAttach(context);
+
+        if (getParentFragment() != null && getParentFragment() instanceof OnInsightsTodayClickListener) {
+            mListener = (OnInsightsTodayClickListener) getParentFragment();
+        } else if (context instanceof OnInsightsTodayClickListener) {
+            mListener = (OnInsightsTodayClickListener) context;
+        } else {
+            throw new ClassCastException("StatsInsightsTodayFragment must be attached to an instance of " +
+                    "OnInsightsTodayClickListener");
         }
     }
 
