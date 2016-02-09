@@ -502,14 +502,12 @@ public class StatsFragment extends Fragment implements ScrollViewExt.ScrollViewL
                     return;
                 }
                 boolean isInsights = mCurrentTimeframe == StatsTimeframe.INSIGHTS;
-                rootView.findViewById(R.id.stats_other_recent_stats_label_insights).setVisibility(isInsights ? View.VISIBLE :
-                        View
-                                .GONE);
-                rootView.findViewById(R.id.stats_other_recent_stats_label_timeline).setVisibility(isInsights ? View.GONE :
-                        View
-                                .VISIBLE);
-                rootView.findViewById(R.id.stats_other_recent_stats_moved).setVisibility(isInsights ? View.GONE : View
-                        .VISIBLE);
+                rootView.findViewById(R.id.stats_other_recent_stats_label_insights)
+                        .setVisibility(isInsights ? View.VISIBLE : View.GONE);
+                rootView.findViewById(R.id.stats_other_recent_stats_label_timeline)
+                        .setVisibility(isInsights ? View.GONE : View.VISIBLE);
+                rootView.findViewById(R.id.stats_other_recent_stats_moved)
+                        .setVisibility(isInsights ? View.GONE : View.VISIBLE);
             }
         }, StatsConstants.STATS_LABELS_SETUP_DELAY);
     }
@@ -835,7 +833,9 @@ public class StatsFragment extends Fragment implements ScrollViewExt.ScrollViewL
             DualPaneHost dualPaneHost = DualPaneHelper.getDualPaneHost(this);
             if (dualPaneHost != null) {
                 //we are telling MySite fragment that this fragment will be killed after encountering error
-                EventBus.getDefault().postSticky(new MySiteFragment.ContentFinishedOnError());
+                //we have to use sticky event because if error occurs in onActivityResult
+                //listener in MySite fragment might not be ready yet
+                EventBus.getDefault().postSticky(new MySiteFragment.ContentFragmentFinishedOnError());
                 dualPaneHost.resetContentPane();
             }
         } else {
