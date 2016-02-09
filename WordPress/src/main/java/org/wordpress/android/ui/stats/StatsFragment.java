@@ -33,6 +33,7 @@ import org.wordpress.android.analytics.AnalyticsTracker;
 import org.wordpress.android.models.AccountHelper;
 import org.wordpress.android.models.Blog;
 import org.wordpress.android.ui.ActivityId;
+import org.wordpress.android.ui.DualPaneHost;
 import org.wordpress.android.ui.WPWebViewActivity;
 import org.wordpress.android.ui.accounts.SignInActivity;
 import org.wordpress.android.ui.main.MySiteFragment;
@@ -102,6 +103,12 @@ public class StatsFragment extends Fragment implements ScrollViewExt.ScrollViewL
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        if (WordPress.wpDB == null) {
+            Toast.makeText(getActivity(), R.string.fatal_db_error, Toast.LENGTH_LONG).show();
+            finishFragment();
+        }
+
         setHasOptionsMenu(true);
 
         if (savedInstanceState != null) {
@@ -824,8 +831,13 @@ public class StatsFragment extends Fragment implements ScrollViewExt.ScrollViewL
         }
 
         if (DualPaneHelper.isInDualPaneMode(this)) {
-            //we are telling MySite fragment that this fragment needs to be removed from host due to some error
-            EventBus.getDefault().postSticky(new MySiteFragment.ContentFragmentErrorEvent());
+
+            DualPaneHost dualPaneHost = DualPaneHelper.getDualPaneHost(this);
+            if (dualPaneHost != null) {
+                //we are telling MySite fragment that this fragment will be killed after encountering error
+                EventBus.getDefault().postSticky(new MySiteFragment.ContentFinishedOnError());
+                dualPaneHost.resetContentPane();
+            }
         } else {
             //if fragment is not part of dual pane host finish activity it belongs to.
             getActivity().finish();

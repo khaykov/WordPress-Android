@@ -2,10 +2,8 @@ package org.wordpress.android.ui.stats;
 
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
-import android.widget.Toast;
 
 import org.wordpress.android.R;
-import org.wordpress.android.WordPress;
 import org.wordpress.android.ui.ActivityLauncher;
 import org.wordpress.android.ui.DualPaneContentActivity;
 
@@ -22,13 +20,6 @@ public class StatsActivity extends DualPaneContentActivity {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
-        if (WordPress.wpDB == null) {
-            Toast.makeText(this, R.string.fatal_db_error, Toast.LENGTH_LONG).show();
-            finish();
-            return;
-        }
-
         setContentView(R.layout.stats_activity);
 
         if (savedInstanceState == null) {
