@@ -55,6 +55,12 @@ import java.util.Map;
 
 import de.greenrobot.event.EventBus;
 
+/**
+ * The native stats fragment
+ * <p>
+ * By pressing a spinner on the toolbar, the user can select which timeframe they wish to see.
+ * </p>
+ */
 public class StatsFragment extends Fragment implements ScrollViewExt.ScrollViewListener,
         StatsVisitorsAndViewsFragment.OnDateChangeListener,
         StatsVisitorsAndViewsFragment.OnOverviewItemChangeListener,
@@ -74,11 +80,6 @@ public class StatsFragment extends Fragment implements ScrollViewExt.ScrollViewL
     private ScrollViewExt mOuterScrollView;
 
     private static final int REQUEST_JETPACK = 7000;
-
-    @Override
-    public int getMatchingRowViewId() {
-        return R.id.row_stats;
-    }
 
     public enum StatsLaunchedFrom {
         STATS_WIDGET,
@@ -129,6 +130,20 @@ public class StatsFragment extends Fragment implements ScrollViewExt.ScrollViewL
                 }
             }
         }
+
+        final Blog currentBlog = WordPress.getBlog(mLocalBlogID);
+
+        if (currentBlog == null) {
+            AppLog.e(AppLog.T.STATS, "The blog with local_blog_id " + mLocalBlogID + " cannot be loaded from the DB.");
+            Toast.makeText(getActivity(), R.string.stats_no_blog, Toast.LENGTH_LONG).show();
+            finishFragment();
+        }
+
+        // Track usage here
+        if (savedInstanceState == null) {
+            AnalyticsUtils.trackWithBlogDetails(AnalyticsTracker.Stat.STATS_ACCESSED, currentBlog);
+            trackStatsAnalytics();
+        }
     }
 
     @Override
@@ -140,7 +155,7 @@ public class StatsFragment extends Fragment implements ScrollViewExt.ScrollViewL
             if (yScrollPosition != 0) {
                 mOuterScrollView.postDelayed(new Runnable() {
                     public void run() {
-                        if (!isAdded()) {
+                        if (isAdded()) {
                             mOuterScrollView.scrollTo(0, yScrollPosition);
                         }
                     }
@@ -156,14 +171,12 @@ public class StatsFragment extends Fragment implements ScrollViewExt.ScrollViewL
 
         Toolbar toolbar = (Toolbar) view.findViewById(R.id.toolbar);
 
+        //modify UI to make it look good in dual pane
         if (DualPaneHelper.isInDualPaneMode(this)) {
-
-            if (DualPaneHelper.isInDualPaneMode(this)) {
-                ScrollView.LayoutParams lp = (ScrollView.LayoutParams) view.findViewById(R.id.content_container)
-                        .getLayoutParams();
-                lp.leftMargin = getResources().getDimensionPixelSize(R.dimen.content_margin_normal);
-                lp.rightMargin = getResources().getDimensionPixelSize(R.dimen.content_margin_normal);
-            }
+            ScrollView.LayoutParams lp = (ScrollView.LayoutParams) view.findViewById(R.id.content_container)
+                    .getLayoutParams();
+            lp.leftMargin = getResources().getDimensionPixelSize(R.dimen.content_margin_normal);
+            lp.rightMargin = getResources().getDimensionPixelSize(R.dimen.content_margin_normal);
 
             toolbar.setBackgroundColor(ContextCompat.getColor(getActivity(), R.color.white));
 
@@ -175,10 +188,8 @@ public class StatsFragment extends Fragment implements ScrollViewExt.ScrollViewL
             layoutParams.leftMargin = getResources().getDimensionPixelSize(R.dimen.margin_small);
             layoutParams.rightMargin = getResources().getDimensionPixelSize(R.dimen.margin_small);
         } else {
-
             ((AppCompatActivity) getActivity()).setSupportActionBar(toolbar);
             ActionBar actionBar = ((AppCompatActivity) getActivity()).getSupportActionBar();
-
             actionBar.setDisplayShowTitleEnabled(false);
             actionBar.setDisplayHomeAsUpEnabled(true);
         }
@@ -210,13 +221,6 @@ public class StatsFragment extends Fragment implements ScrollViewExt.ScrollViewL
         mOuterScrollView.setScrollViewListener(this);
 
         //Make sure the blog_id passed to this activity is valid and the blog is available within the app
-        final Blog currentBlog = WordPress.getBlog(mLocalBlogID);
-
-        if (currentBlog == null) {
-            AppLog.e(AppLog.T.STATS, "The blog with local_blog_id " + mLocalBlogID + " cannot be loaded from the DB.");
-            Toast.makeText(getActivity(), R.string.stats_no_blog, Toast.LENGTH_LONG).show();
-            finishFragment();
-        }
 
         // create the fragments without forcing the re-creation. If the activity is restarted fragments can already
         // be there, and ready to be displayed without making any network connections. A fragment calls the stats service
@@ -235,6 +239,7 @@ public class StatsFragment extends Fragment implements ScrollViewExt.ScrollViewL
                 if (!isAdded()) {
                     return;
                 }
+
                 final StatsTimeframe selectedTimeframe = (StatsTimeframe) mTimeframeSpinnerAdapter.getItem(position);
 
                 if (mCurrentTimeframe == selectedTimeframe) {
@@ -251,7 +256,7 @@ public class StatsFragment extends Fragment implements ScrollViewExt.ScrollViewL
                 mSpinner.postDelayed(new Runnable() {
                     @Override
                     public void run() {
-                        if (!isAdded()) {
+                        if (isAdded()) {
                             scrollToTop();
                         }
                     }
@@ -282,19 +287,13 @@ public class StatsFragment extends Fragment implements ScrollViewExt.ScrollViewL
                 mSpinner.postDelayed(new Runnable() {
                     @Override
                     public void run() {
-                        if (!isAdded()) {
+                        if (isAdded()) {
                             scrollToTop();
                         }
                     }
                 }, StatsConstants.STATS_SCROLL_TO_DELAY);
             }
         });
-
-        // Track usage here
-        if (savedInstanceState == null) {
-            AnalyticsUtils.trackWithBlogDetails(AnalyticsTracker.Stat.STATS_ACCESSED, currentBlog);
-            trackStatsAnalytics();
-        }
 
         return view;
     }
@@ -365,15 +364,15 @@ public class StatsFragment extends Fragment implements ScrollViewExt.ScrollViewL
         super.onSaveInstanceState(outState);
     }
 
-    private void createNestedFragments(boolean forceRecreationOfFragments, final View view) {
-        if (!isAdded()) {
+    private void createNestedFragments(boolean forceRecreationOfFragments, final View rootView) {
+        if (!isAdded() || rootView == null) {
             return;
         }
 
         // Make the labels invisible see: https://github.com/wordpress-mobile/WordPress-Android/issues/3279
-        view.findViewById(R.id.stats_other_recent_stats_label_insights).setVisibility(View.INVISIBLE);
-        view.findViewById(R.id.stats_other_recent_stats_label_timeline).setVisibility(View.INVISIBLE);
-        view.findViewById(R.id.stats_other_recent_stats_moved).setVisibility(View.INVISIBLE);
+        rootView.findViewById(R.id.stats_other_recent_stats_label_insights).setVisibility(View.INVISIBLE);
+        rootView.findViewById(R.id.stats_other_recent_stats_label_timeline).setVisibility(View.INVISIBLE);
+        rootView.findViewById(R.id.stats_other_recent_stats_moved).setVisibility(View.INVISIBLE);
 
         FragmentManager fm = getChildFragmentManager();
         FragmentTransaction ft = fm.beginTransaction();
@@ -381,8 +380,8 @@ public class StatsFragment extends Fragment implements ScrollViewExt.ScrollViewL
         StatsAbstractFragment fragment;
 
         if (mCurrentTimeframe != StatsTimeframe.INSIGHTS) {
-            view.findViewById(R.id.stats_timeline_fragments_container).setVisibility(View.VISIBLE);
-            view.findViewById(R.id.stats_insights_fragments_container).setVisibility(View.GONE);
+            rootView.findViewById(R.id.stats_timeline_fragments_container).setVisibility(View.VISIBLE);
+            rootView.findViewById(R.id.stats_insights_fragments_container).setVisibility(View.GONE);
 
             if (fm.findFragmentByTag(StatsVisitorsAndViewsFragment.TAG) == null || forceRecreationOfFragments) {
                 fragment = StatsAbstractFragment.newVisitorsAndViewsInstance(StatsViewType.GRAPH_AND_SUMMARY,
@@ -433,8 +432,8 @@ public class StatsFragment extends Fragment implements ScrollViewExt.ScrollViewL
                 ft.replace(R.id.stats_search_terms_container, fragment, StatsSearchTermsFragment.TAG);
             }
         } else {
-            view.findViewById(R.id.stats_timeline_fragments_container).setVisibility(View.GONE);
-            view.findViewById(R.id.stats_insights_fragments_container).setVisibility(View.VISIBLE);
+            rootView.findViewById(R.id.stats_timeline_fragments_container).setVisibility(View.GONE);
+            rootView.findViewById(R.id.stats_insights_fragments_container).setVisibility(View.VISIBLE);
 
             if (fm.findFragmentByTag(StatsInsightsMostPopularFragment.TAG) == null || forceRecreationOfFragments) {
                 fragment = StatsAbstractFragment.newInstance(StatsViewType.INSIGHTS_MOST_POPULAR, mLocalBlogID,
@@ -496,12 +495,14 @@ public class StatsFragment extends Fragment implements ScrollViewExt.ScrollViewL
                     return;
                 }
                 boolean isInsights = mCurrentTimeframe == StatsTimeframe.INSIGHTS;
-                view.findViewById(R.id.stats_other_recent_stats_label_insights).setVisibility(isInsights ? View.VISIBLE :
+                rootView.findViewById(R.id.stats_other_recent_stats_label_insights).setVisibility(isInsights ? View.VISIBLE :
                         View
                                 .GONE);
-                view.findViewById(R.id.stats_other_recent_stats_label_timeline).setVisibility(isInsights ? View.GONE : View
+                rootView.findViewById(R.id.stats_other_recent_stats_label_timeline).setVisibility(isInsights ? View.GONE :
+                        View
+                                .VISIBLE);
+                rootView.findViewById(R.id.stats_other_recent_stats_moved).setVisibility(isInsights ? View.GONE : View
                         .VISIBLE);
-                view.findViewById(R.id.stats_other_recent_stats_moved).setVisibility(isInsights ? View.GONE : View.VISIBLE);
             }
         }, StatsConstants.STATS_LABELS_SETUP_DELAY);
     }
@@ -603,9 +604,8 @@ public class StatsFragment extends Fragment implements ScrollViewExt.ScrollViewL
                                         public void run() {
                                             mSwipeToRefreshHelper.setRefreshing(true);
                                             mRequestedDate = StatsUtils.getCurrentDateTZ(mLocalBlogID);
-                                            createNestedFragments(true, getView()); // Recreate the fragment and start a
-                                            // refresh
-                                            // of Stats
+                                            createNestedFragments(true, getView());
+                                            // Recreate the fragment and start a refresh of Stats
                                         }
                                     });
                                 }
@@ -621,6 +621,8 @@ public class StatsFragment extends Fragment implements ScrollViewExt.ScrollViewL
                             handler.post(new Runnable() {
                                 @Override
                                 public void run() {
+                                    if (!isAdded()) return;
+
                                     mSwipeToRefreshHelper.setRefreshing(false);
                                     ToastUtils.showToast(getActivity(),
                                             getString(R.string.error_refresh_stats),
@@ -706,7 +708,7 @@ public class StatsFragment extends Fragment implements ScrollViewExt.ScrollViewL
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         int i = item.getItemId();
-        if (i == android.R.id.home) {
+        if (i == android.R.id.home) { //we only have UP button in single pane mode
             getActivity().onBackPressed();
             return true;
         }
@@ -721,6 +723,10 @@ public class StatsFragment extends Fragment implements ScrollViewExt.ScrollViewL
     // StatsInsightsTodayFragment calls this when the user taps on a item in Today's Stats
     @Override
     public void onInsightsTodayClicked(final StatsVisitorsAndViewsFragment.OverviewLabel item) {
+        if (!isAdded()) {
+            return;
+        }
+
         mTabToSelectOnGraph = item;
         for (int i = 0; i < timeframes.length; i++) {
             if (timeframes[i] == StatsTimeframe.DAY) {
@@ -752,6 +758,10 @@ public class StatsFragment extends Fragment implements ScrollViewExt.ScrollViewL
     }
 
     private boolean checkCredentials() {
+        if (!isAdded()) {
+            return false;
+        }
+
         if (!NetworkUtils.isNetworkAvailable(getActivity())) {
             AppLog.w(AppLog.T.STATS, "StatsActivity > cannot check credentials since no internet connection available");
             return false;
@@ -768,8 +778,8 @@ public class StatsFragment extends Fragment implements ScrollViewExt.ScrollViewL
         // blogId is always available for dotcom blogs. It could be null on Jetpack blogs...
         if (blogId != null) {
             // for self-hosted sites; launch the user into an activity where they can provide their credentials
-            if (!currentBlog.isDotcomFlag()
-                    && !currentBlog.hasValidJetpackCredentials() && mResultCode != Activity.RESULT_CANCELED) {
+            if (!currentBlog.isDotcomFlag() && !currentBlog.hasValidJetpackCredentials() &&
+                    mResultCode != Activity.RESULT_CANCELED) {
                 if (AccountHelper.isSignedInWordPressDotCom()) {
                     // Let's try the global wpcom credentials them first
                     String username = AccountHelper.getDefaultAccount().getUserName();
@@ -809,6 +819,10 @@ public class StatsFragment extends Fragment implements ScrollViewExt.ScrollViewL
     }
 
     private void finishFragment() {
+        if (!isAdded()) {
+            return;
+        }
+
         if (DualPaneHelper.isInDualPaneMode(this)) {
             //we are telling MySite fragment that this fragment needs to be removed from host due to some error
             EventBus.getDefault().postSticky(new MySiteFragment.ContentFragmentErrorEvent());
@@ -925,7 +939,7 @@ public class StatsFragment extends Fragment implements ScrollViewExt.ScrollViewL
             final TextView text = (TextView) view.findViewById(R.id.text);
 
             if (DualPaneHelper.isInDualPaneMode(StatsFragment.this)) {
-                text.setTextColor(ContextCompat.getColor(getActivity(), R.color.black));
+                text.setTextColor(ContextCompat.getColor(getActivity(), R.color.grey_dark));
             }
 
             StatsTimeframe selectedTimeframe = (StatsTimeframe) getItem(position);
@@ -991,4 +1005,9 @@ public class StatsFragment extends Fragment implements ScrollViewExt.ScrollViewL
             return true;
         }
     };
+
+    @Override
+    public int getMatchingRowViewId() {
+        return R.id.row_stats;
+    }
 }

@@ -76,6 +76,11 @@ public class MySiteFragment extends Fragment implements WPMainActivity.OnScrollT
         int getMatchingRowViewId();
     }
 
+    // used to notify MySiteFragment that content fragment encountered error and needs to be removed
+    // substitute for finishing activity on error while in single pane mode
+    public static class ContentFragmentErrorEvent {
+    }
+
     public static MySiteFragment newInstance() {
         return new MySiteFragment();
     }
@@ -468,11 +473,9 @@ public class MySiteFragment extends Fragment implements WPMainActivity.OnScrollT
     @SuppressWarnings("unused")
     public void onEventMainThread(ContentFragmentErrorEvent event) {
         EventBus.getDefault().removeStickyEvent(ContentFragmentErrorEvent.class);
+
         removeContentFragment();
         resetRowSelection();
         selectDefaultRow();
-    }
-
-    public static class ContentFragmentErrorEvent {
     }
 }

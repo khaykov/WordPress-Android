@@ -27,7 +27,6 @@
                 android:layout_marginRight="@dimen/content_margin"
                 android:orientation="vertical">
 
-
                 <!-- Insights -->
                 <LinearLayout
                     android:id="@+id/stats_insights_fragments_container"

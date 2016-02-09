@@ -1,6 +1,5 @@
 package org.wordpress.android.ui.stats;
 
-import android.app.Activity;
 import android.content.Context;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
@@ -88,17 +87,25 @@ public class StatsVisitorsAndViewsFragment extends StatsAbstractFragment
     }
 
     @Override
-    public void onAttach(Activity activity) {
-        super.onAttach(activity);
-        try {
+    public void onAttach(Context context) {
+        super.onAttach(context);
+
+        if (getParentFragment() != null && getParentFragment() instanceof OnDateChangeListener) {
             mListener = (OnDateChangeListener) getParentFragment();
-        } catch (ClassCastException e) {
-            throw new ClassCastException(activity.toString() + " must implement OnDateChangeListener");
+        } else if (context instanceof OnDateChangeListener) {
+            mListener = (OnDateChangeListener) context;
+        } else {
+            throw new ClassCastException("StatsVisitorsAndViewsFragment must be attached to an instance of " +
+                    "OnDateChangeListener");
         }
-        try {
+
+        if (getParentFragment() != null && getParentFragment() instanceof OnOverviewItemChangeListener) {
             mOverviewItemChangeListener = (OnOverviewItemChangeListener) getParentFragment();
-        } catch (ClassCastException e) {
-            throw new ClassCastException(activity.toString() + " must implement OnOverviewItemChangeListener");
+        } else if (context instanceof OnOverviewItemChangeListener) {
+            mOverviewItemChangeListener = (OnOverviewItemChangeListener) context;
+        } else {
+            throw new ClassCastException("StatsVisitorsAndViewsFragment must be attached to an instance of " +
+                    "OnOverviewItemChangeListener");
         }
     }
 

@@ -77,14 +77,13 @@ public class ActivityLauncher {
         if (dualPaneHost != null) {
             showDualPaneContent(context,
                     StatsFragment.class,
-                    "stats_fragment",
+                    context.getString(R.string.fragment_tag_stats),
                     intent,
                     dualPaneHost,
                     null);
-        }else{
+        } else {
             slideInFromRight(context, intent);
         }
-
     }
 
     public static void viewCurrentBlogPosts(Context context, @Nullable DualPaneHost dualPaneHost) {

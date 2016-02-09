@@ -10,14 +10,9 @@ import org.wordpress.android.ui.ActivityLauncher;
 import org.wordpress.android.ui.DualPaneContentActivity;
 
 /**
- * The native stats activity
- * <p>
- * By pressing a spinner on the action bar, the user can select which timeframe they wish to see.
- * </p>
+ * Serves as the host for {@link StatsFragment}.
  */
 public class StatsActivity extends DualPaneContentActivity {
-
-
 
     @Override
     protected String getContentFragmentTag() {
