@@ -1,6 +1,6 @@
 package org.wordpress.android.ui.themes;
 
-import android.app.Activity;
+import android.content.Context;
 import android.database.Cursor;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
@@ -35,13 +35,19 @@ import org.wordpress.android.widgets.HeaderGridView;
 /**
  * A fragment display the themes on a grid view.
  */
-public class ThemeBrowserFragment extends Fragment implements RecyclerListener, AdapterView.OnItemSelectedListener, AbsListView.OnScrollListener {
+public class ThemeBrowserFragment extends Fragment implements RecyclerListener, AdapterView.OnItemSelectedListener,
+        AbsListView.OnScrollListener {
     public interface ThemeBrowserFragmentCallback {
         void onActivateSelected(String themeId);
+
         void onTryAndCustomizeSelected(String themeId);
+
         void onViewSelected(String themeId);
+
         void onDetailsSelected(String themeId);
+
         void onSupportSelected(String themeId);
+
         void onSearchClicked();
     }
 
@@ -66,14 +72,14 @@ public class ThemeBrowserFragment extends Fragment implements RecyclerListener, 
     private ProgressBar mProgressBar;
 
     @Override
-    public void onAttach(Activity activity) {
-        super.onAttach(activity);
-
+    public void onAttach(Context context) {
+        super.onAttach(context);
         try {
             mCallback = (ThemeBrowserFragmentCallback) getParentFragment();
             mThemesFragment = (ThemeFragment) getParentFragment();
-        } catch (ClassCastException e) {
-            throw new ClassCastException(activity.toString() + " must implement ThemeBrowserFragmentCallback");
+        } catch (ClassCastException | NullPointerException e) {
+            throw new ClassCastException("ThemeBrowserFragment must be attached to an instance of " +
+                    "ThemeBrowserFragmentCallback");
         }
     }
 
@@ -297,6 +303,8 @@ public class ThemeBrowserFragment extends Fragment implements RecyclerListener, 
     }
 
     protected void refreshView(int position) {
+        if (!isAdded()) return;
+
         Cursor cursor = fetchThemes(position);
         if (cursor == null) {
             return;
@@ -347,7 +355,6 @@ public class ThemeBrowserFragment extends Fragment implements RecyclerListener, 
                     @Override
                     public void onResponse(ImageContainer response, boolean isImmediate) {
                     }
-
                 });
                 container.cancelRequest();
             }
