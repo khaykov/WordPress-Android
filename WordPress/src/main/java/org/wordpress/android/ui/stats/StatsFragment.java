@@ -5,6 +5,9 @@ import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.graphics.PorterDuff;
+import android.graphics.drawable.Drawable;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.support.annotation.Nullable;
@@ -21,7 +24,6 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.BaseAdapter;
-import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.Spinner;
 import android.widget.TextView;
@@ -180,20 +182,12 @@ public class StatsFragment extends Fragment implements ScrollViewExt.ScrollViewL
 
         //modify UI to make it look good in dual pane
         if (DualPaneHelper.isInDualPaneMode(this)) {
+            toolbar.setVisibility(View.GONE);
+
             ScrollView.LayoutParams lp = (ScrollView.LayoutParams) view.findViewById(R.id.content_container)
                     .getLayoutParams();
             lp.leftMargin = getResources().getDimensionPixelSize(R.dimen.content_margin_normal);
             lp.rightMargin = getResources().getDimensionPixelSize(R.dimen.content_margin_normal);
-
-            toolbar.setBackgroundColor(ContextCompat.getColor(getActivity(), R.color.white));
-
-            toolbar.setContentInsetsAbsolute(getResources().getDimensionPixelSize(R.dimen.content_margin_normal), 0);
-            toolbar.setContentInsetsRelative(getResources().getDimensionPixelSize(R.dimen.content_margin_normal), 0);
-
-            LinearLayout.LayoutParams layoutParams = (LinearLayout.LayoutParams) toolbar.getLayoutParams();
-            layoutParams.topMargin = getResources().getDimensionPixelSize(R.dimen.content_margin_normal);
-            layoutParams.leftMargin = getResources().getDimensionPixelSize(R.dimen.margin_small);
-            layoutParams.rightMargin = getResources().getDimensionPixelSize(R.dimen.margin_small);
         } else {
             ((AppCompatActivity) getActivity()).setSupportActionBar(toolbar);
             ActionBar actionBar = ((AppCompatActivity) getActivity()).getSupportActionBar();
@@ -234,8 +228,30 @@ public class StatsFragment extends Fragment implements ScrollViewExt.ScrollViewL
         // if its internal datamodel is empty.
         createNestedFragments(false, view);
 
-        View spinner = inflater.inflate(R.layout.toolbar_spinner, toolbar, true);
-        mSpinner = (Spinner) spinner.findViewById(R.id.action_bar_spinner);
+        View spinner;
+
+        // In dual pane mode Spinner should look like the one used in Reader
+        if (DualPaneHelper.isInDualPaneMode(this)) {
+            spinner = inflater.inflate(R.layout.stats_time_frame_spinner_dual_pane,
+                    (ViewGroup) view.findViewById(R.id.content_container), false);
+
+            mSpinner = (Spinner) spinner.findViewById(R.id.time_frame_spinner_dual_pane);
+
+            //changing spinner arrow color to mach custom spinner at ReaderPostListFragment
+            Drawable spinnerBackground = mSpinner.getBackground();
+            spinnerBackground.setColorFilter(ContextCompat.getColor(getActivity(), R.color.grey), PorterDuff.Mode.SRC_ATOP);
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.JELLY_BEAN) {
+                mSpinner.setBackgroundDrawable(spinnerBackground);
+            } else {
+                mSpinner.setBackground(spinnerBackground);
+            }
+
+            //adding spinner at top of content container
+            ((ViewGroup) view.findViewById(R.id.content_container)).addView(spinner, 0);
+        } else {
+            spinner = inflater.inflate(R.layout.toolbar_spinner, toolbar, true);
+            mSpinner = (Spinner) spinner.findViewById(R.id.action_bar_spinner);
+        }
 
         mTimeframeSpinnerAdapter = new TimeframeSpinnerAdapter(getActivity(), timeframes);
 
@@ -943,16 +959,16 @@ public class StatsFragment extends Fragment implements ScrollViewExt.ScrollViewL
         public View getView(int position, View convertView, ViewGroup parent) {
             final View view;
             if (convertView == null) {
-                view = mInflater.inflate(R.layout.toolbar_spinner_item, parent, false);
+                if (DualPaneHelper.isInDualPaneMode(StatsFragment.this)) {
+                    view = mInflater.inflate(R.layout.reader_tag_toolbar_menu_item, parent, false);
+                } else {
+                    view = mInflater.inflate(R.layout.toolbar_spinner_item, parent, false);
+                }
             } else {
                 view = convertView;
             }
 
             final TextView text = (TextView) view.findViewById(R.id.text);
-
-            if (DualPaneHelper.isInDualPaneMode(StatsFragment.this)) {
-                text.setTextColor(ContextCompat.getColor(getActivity(), R.color.grey_dark));
-            }
 
             StatsTimeframe selectedTimeframe = (StatsTimeframe) getItem(position);
             text.setText(selectedTimeframe.getLabel());
