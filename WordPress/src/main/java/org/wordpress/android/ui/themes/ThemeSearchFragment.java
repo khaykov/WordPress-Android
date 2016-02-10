@@ -13,6 +13,9 @@ import android.view.ViewGroup;
 
 import org.wordpress.android.R;
 import org.wordpress.android.WordPress;
+import org.wordpress.android.ui.main.WPMainTabAdapter;
+import org.wordpress.android.ui.prefs.AppPrefs;
+import org.wordpress.android.util.DualPaneHelper;
 import org.wordpress.android.util.NetworkUtils;
 
 /**
@@ -84,9 +87,19 @@ public class ThemeSearchFragment extends ThemeBrowserFragment implements SearchV
 
     public void configureSearchView() {
         mSearchView = (SearchView) MenuItemCompat.getActionView(mSearchMenuItem);
+
+        //prevent keyboard from appearing when fragment is not visible
+        mSearchView.setIconified(!isVisible());
+
         mSearchView.setOnQueryTextListener(this);
         mSearchView.setQuery(mLastSearch, true);
         mSearchView.setMaxWidth(SEARCH_VIEW_MAX_WIDTH);
+
+        //prevent keyboard from appearing when fragment is visible in ViewPager but we are not in MySite tab
+        if (DualPaneHelper.isInDualPaneMode(getParentFragment()) &&
+                AppPrefs.getMainTabIndex() != WPMainTabAdapter.TAB_MY_SITE) {
+            clearFocus(mSearchView);
+        }
     }
 
     private void clearFocus(View view) {
@@ -105,6 +118,16 @@ public class ThemeSearchFragment extends ThemeBrowserFragment implements SearchV
 
     @Override
     public boolean onMenuItemActionCollapse(MenuItem item) {
+
+        // Expanded SearchView consumes onBackPressed events, so when we are in some tab other then MySite,
+        // or the ThemeSearchFragment is not visible we need to call onBackPressed() of parent activity
+        if (!isVisible() || (DualPaneHelper.isInDualPaneMode(getParentFragment()) &&
+                AppPrefs.getMainTabIndex() != WPMainTabAdapter.TAB_MY_SITE)) {
+
+            getActivity().onBackPressed();
+            return true;
+        }
+
         mThemesFragment.setIsInSearchMode(false);
         mThemesFragment.showToolbar();
         mThemesFragment.getChildFragmentManager().popBackStack();
