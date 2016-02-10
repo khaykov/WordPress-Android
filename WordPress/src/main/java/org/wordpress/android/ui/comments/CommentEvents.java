@@ -6,11 +6,11 @@ import org.wordpress.android.models.CommentStatus;
 
 class CommentEvents {
 
-    public static class BatchCommentsModeratedEvent {
+    public static class CommentsBatchModeratedEvent {
         private CommentList mComments;
         private boolean mIsDeleted;
 
-        public BatchCommentsModeratedEvent(CommentList comments, boolean isDeleted) {
+        public CommentsBatchModeratedEvent(CommentList comments, boolean isDeleted) {
             mComments = comments;
             mIsDeleted = isDeleted;
         }

@@ -23,23 +23,28 @@ public class CommentAdapterState implements Parcelable {
                                @NonNull HashSet<Long> selectedComments,
                                @NonNull HashSet<Long> moderatedCommentsId) {
 
-        // I had tons of problems with passing HashSet as serializable
-        // so instead they are converted to primitive array before going into Parcel
+        // I encountered couple of issues when passing HashSets as serializable
+        // so instead they are converted to primitive arrays before going into Parcel
         mTrashedCommentId = ArrayUtils.toPrimitive(trashedCommentId.toArray(new Long[trashedCommentId.size()]));
         mSelectedComments = ArrayUtils.toPrimitive(selectedComments.toArray(new Long[selectedComments.size()]));
         mModeratedCommentsId = ArrayUtils.toPrimitive(moderatedCommentsId.toArray(new Long[moderatedCommentsId.size()]));
     }
 
     public HashSet<Long> getTrashedCommentId() {
-        return new HashSet<>(Arrays.asList(ArrayUtils.toObject(mTrashedCommentId)));
+        return primitiveArrayToHashSet(mTrashedCommentId);
     }
 
     public HashSet<Long> getSelectedComments() {
-        return new HashSet<>(Arrays.asList(ArrayUtils.toObject(mSelectedComments)));
+        return primitiveArrayToHashSet(mSelectedComments);
     }
 
     public HashSet<Long> getModeratedCommentsId() {
-        return new HashSet<>(Arrays.asList(ArrayUtils.toObject(mModeratedCommentsId)));
+        return primitiveArrayToHashSet(mModeratedCommentsId);
+    }
+
+    private HashSet<Long> primitiveArrayToHashSet(long[] array) {
+        if (array == null) return null;
+        return new HashSet<>(Arrays.asList(ArrayUtils.toObject(array)));
     }
 
     public boolean hasSelectedComments() {
