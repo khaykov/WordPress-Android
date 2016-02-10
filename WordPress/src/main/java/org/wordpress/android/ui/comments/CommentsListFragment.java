@@ -63,6 +63,8 @@ public class CommentsListFragment extends Fragment implements
     private static final String KEY_AUTO_REFRESHED = "has_auto_refreshed";
     private static final String KEY_EMPTY_VIEW_MESSAGE = "empty_view_message";
 
+    private static final String COMMENT_MODERATION_PROGRESS_DIALOG_TAG = "moderation_progress_dialog";
+
     private boolean mIsUpdatingComments = false;
     private boolean mCanLoadMoreComments = true;
     boolean mHasAutoRefreshedComments = false;
@@ -185,7 +187,7 @@ public class CommentsListFragment extends Fragment implements
         if (hasAdapter() && comment != null) {
             getCommentsAdapter().removeComment(comment);
 
-            if (getCommentsAdapter().getItemCount() == 0) {
+            if (getCommentsAdapter().isEmpty()) {
                 updateEmptyView(EmptyViewMessageType.NO_CONTENT);
             }
         }
@@ -236,7 +238,7 @@ public class CommentsListFragment extends Fragment implements
         CommentActions.OnCommentsModeratedListener listener = new CommentActions.OnCommentsModeratedListener() {
             @Override
             public void onCommentsModerated(final CommentList moderatedComments) {
-                EventBus.getDefault().postSticky(new CommentEvents.BatchCommentsModeratedEvent(moderatedComments, false));
+                EventBus.getDefault().postSticky(new CommentEvents.CommentsBatchModeratedEvent(moderatedComments, false));
             }
         };
 
@@ -247,9 +249,9 @@ public class CommentsListFragment extends Fragment implements
                 listener);
     }
 
-    public void onEventMainThread(CommentEvents.BatchCommentsModeratedEvent moderatedComments) {
+    public void onEventMainThread(CommentEvents.CommentsBatchModeratedEvent moderatedComments) {
         if (!isAdded()) return;
-        EventBus.getDefault().removeStickyEvent(CommentEvents.BatchCommentsModeratedEvent.class);
+        EventBus.getDefault().removeStickyEvent(CommentEvents.CommentsBatchModeratedEvent.class);
 
         hideProgressDialog();
         finishActionMode();
@@ -265,7 +267,7 @@ public class CommentsListFragment extends Fragment implements
         }
     }
 
-    // dismiss CAB when we switch tabs
+    // dismiss CAB when we switch tabs in main ViewPager
     public void onEventMainThread(CoreEvents.MainViewPagerPageSelected event) {
         if (isAdded() && event != null && event.getPosition() != WPMainTabAdapter.TAB_MY_SITE) {
             finishActionMode();
@@ -273,12 +275,13 @@ public class CommentsListFragment extends Fragment implements
     }
 
     private void showProgressDialog(String message) {
-        WPProgressDialogFragment.newInstance(message).show(getChildFragmentManager(), "progress_dialog");
+        WPProgressDialogFragment.newInstance(message).show(getChildFragmentManager(),
+                COMMENT_MODERATION_PROGRESS_DIALOG_TAG);
     }
 
     private void hideProgressDialog() {
         FragmentManager fragmentManager = getChildFragmentManager();
-        Fragment progressDialog = fragmentManager.findFragmentByTag("progress_dialog");
+        Fragment progressDialog = fragmentManager.findFragmentByTag(COMMENT_MODERATION_PROGRESS_DIALOG_TAG);
         if (progressDialog != null) {
             fragmentManager.beginTransaction().remove(progressDialog).commitAllowingStateLoss();
         }
@@ -296,7 +299,7 @@ public class CommentsListFragment extends Fragment implements
         CommentActions.OnCommentsModeratedListener listener = new CommentActions.OnCommentsModeratedListener() {
             @Override
             public void onCommentsModerated(final CommentList deletedComments) {
-                EventBus.getDefault().postSticky(new CommentEvents.BatchCommentsModeratedEvent(deletedComments, true));
+                EventBus.getDefault().postSticky(new CommentEvents.CommentsBatchModeratedEvent(deletedComments, true));
             }
         };
 
@@ -677,7 +680,8 @@ public class CommentsListFragment extends Fragment implements
                 restoreCab();
             }
 
-            //if the fragment was destroyed, we will have to moderate comments after adapter have been reinitialized
+            // if the fragment was destroyed while we moderated comment
+            // we will have to finish moderation after adapter have been reinitialized
             if (EventBus.getDefault().getStickyEvent(CommentEvents.CommentModeratedEvent.class) != null) {
                 onEventMainThread(EventBus.getDefault().getStickyEvent(CommentEvents.CommentModeratedEvent.class));
             }
