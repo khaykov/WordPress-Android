@@ -34,6 +34,7 @@ import org.wordpress.android.analytics.AnalyticsTracker;
 import org.wordpress.android.models.Blog;
 import org.wordpress.android.models.Theme;
 import org.wordpress.android.ui.ActivityId;
+import org.wordpress.android.ui.DualPaneHost;
 import org.wordpress.android.ui.main.MySiteFragment;
 import org.wordpress.android.util.AnalyticsUtils;
 import org.wordpress.android.util.AppLog;
@@ -44,6 +45,8 @@ import org.wordpress.android.widgets.WPAlertDialogFragment;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
+
+import de.greenrobot.event.EventBus;
 
 public class ThemeFragment extends Fragment implements ThemeBrowserFragment.ThemeBrowserFragmentCallback, MySiteFragment
         .MySiteContentFragment {
@@ -72,6 +75,12 @@ public class ThemeFragment extends Fragment implements ThemeBrowserFragment.Them
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        if (WordPress.wpDB == null) {
+            Toast.makeText(getActivity(), R.string.fatal_db_error, Toast.LENGTH_LONG).show();
+            finishFragment();
+        }
+
         setCurrentThemeFromDB();
         setHasOptionsMenu(true);
         if (savedInstanceState != null) {
@@ -551,5 +560,26 @@ public class ThemeFragment extends Fragment implements ThemeBrowserFragment.Them
     public void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);
         outState.putBoolean(IS_IN_SEARCH_MODE, mIsInSearchMode);
+    }
+
+    private void finishFragment() {
+        if (!isAdded()) {
+            return;
+        }
+
+        if (DualPaneHelper.isInDualPaneMode(this)) {
+
+            DualPaneHost dualPaneHost = DualPaneHelper.getDualPaneHost(this);
+            if (dualPaneHost != null) {
+                //we are telling MySite fragment that this fragment will be killed after encountering error
+                //we have to use sticky event because if error occurs in onActivityResult
+                //listener in MySite fragment might not be ready yet
+                EventBus.getDefault().postSticky(new MySiteFragment.ContentFragmentFinishedOnError());
+                dualPaneHost.resetContentPane();
+            }
+        } else {
+            //if fragment is not part of dual pane host finish activity it belongs to.
+            getActivity().finish();
+        }
     }
 }

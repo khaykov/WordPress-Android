@@ -26,7 +26,6 @@ import org.wordpress.android.ui.RequestCodes;
 import org.wordpress.android.ui.accounts.BlogUtils;
 import org.wordpress.android.ui.posts.EditPostActivity;
 import org.wordpress.android.ui.stats.service.StatsService;
-import org.wordpress.android.ui.themes.ThemeBrowserActivity;
 import org.wordpress.android.ui.themes.ThemeFragment;
 import org.wordpress.android.util.AniUtils;
 import org.wordpress.android.util.CoreEvents;
@@ -75,6 +74,10 @@ public class MySiteFragment extends Fragment implements WPMainActivity.OnScrollT
 
     public interface MySiteContentFragment {
         int getMatchingRowViewId();
+    }
+
+    // used to notify MySiteFragment that content fragment encountered error and was killed
+    public static class ContentFragmentFinishedOnError {
     }
 
     public static MySiteFragment newInstance() {
@@ -439,7 +442,7 @@ public class MySiteFragment extends Fragment implements WPMainActivity.OnScrollT
     @Override
     public void onStart() {
         super.onStart();
-        EventBus.getDefault().register(this);
+        EventBus.getDefault().registerSticky(this);
     }
 
     /*
@@ -464,5 +467,13 @@ public class MySiteFragment extends Fragment implements WPMainActivity.OnScrollT
         super.onSaveInstanceState(outState);
         outState.putInt(SELECTED_ROW_VIEW_ID, mSelectedRowViewId);
         outState.putInt(PREVIOUS_BLOG_LOCAL_ID, mBlogLocalId);
+    }
+
+    @SuppressWarnings("unused")
+    public void onEventMainThread(ContentFragmentFinishedOnError event) {
+        EventBus.getDefault().removeStickyEvent(ContentFragmentFinishedOnError.class);
+
+        resetRowSelection();
+        selectDefaultRow();
     }
 }

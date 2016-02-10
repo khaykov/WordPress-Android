@@ -3,10 +3,8 @@ package org.wordpress.android.ui.themes;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
-import android.widget.Toast;
 
 import org.wordpress.android.R;
-import org.wordpress.android.WordPress;
 import org.wordpress.android.ui.ActivityLauncher;
 import org.wordpress.android.ui.DualPaneContentActivity;
 
@@ -23,13 +21,6 @@ public class ThemeBrowserActivity extends DualPaneContentActivity {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
-        if (WordPress.wpDB == null) {
-            Toast.makeText(this, R.string.fatal_db_error, Toast.LENGTH_LONG).show();
-            finish();
-            return;
-        }
-
         setContentView(R.layout.theme_browser_activity);
 
         if (savedInstanceState == null) {
@@ -39,7 +30,8 @@ public class ThemeBrowserActivity extends DualPaneContentActivity {
             if (fragment == null) {
                 fragment = Fragment.instantiate(this, ThemeFragment.class.getName(), getIntent().getExtras());
                 fragment.setInitialSavedState(getFragmentSavedState());
-                fragmentManager.beginTransaction().replace(R.id.fragment_container, fragment, getContentFragmentTag()).commit();
+                fragmentManager.beginTransaction().replace(R.id.fragment_container, fragment, getContentFragmentTag())
+                        .commit();
             }
         }
     }
