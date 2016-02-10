@@ -19,7 +19,9 @@ import org.wordpress.android.ui.accounts.HelpActivity;
 import org.wordpress.android.ui.accounts.NewAccountActivity;
 import org.wordpress.android.ui.accounts.NewBlogActivity;
 import org.wordpress.android.ui.accounts.SignInActivity;
+import org.wordpress.android.ui.comments.CommentDetailActivity;
 import org.wordpress.android.ui.comments.CommentsActivity;
+import org.wordpress.android.ui.comments.CommentsListFragment;
 import org.wordpress.android.ui.main.SitePickerActivity;
 import org.wordpress.android.ui.media.MediaBrowserActivity;
 import org.wordpress.android.ui.media.WordPressMediaUtils;
@@ -34,6 +36,7 @@ import org.wordpress.android.ui.prefs.SiteSettingsInterface;
 import org.wordpress.android.ui.prefs.notifications.NotificationsSettingsActivity;
 import org.wordpress.android.ui.stats.StatsActivity;
 import org.wordpress.android.ui.stats.StatsConstants;
+import org.wordpress.android.ui.stats.StatsFragment;
 import org.wordpress.android.ui.stats.StatsSingleItemDetailsActivity;
 import org.wordpress.android.ui.stats.models.PostModel;
 import org.wordpress.android.ui.themes.ThemeBrowserActivity;
@@ -68,12 +71,22 @@ public class ActivityLauncher {
         AnalyticsUtils.trackWithCurrentBlogDetails(AnalyticsTracker.Stat.OPENED_VIEW_SITE);
     }
 
-    public static void viewBlogStats(Context context, int blogLocalTableId) {
+    public static void viewBlogStats(Context context, int blogLocalTableId, @Nullable DualPaneHost dualPaneHost) {
         if (blogLocalTableId == 0) return;
 
         Intent intent = new Intent(context, StatsActivity.class);
-        intent.putExtra(StatsActivity.ARG_LOCAL_TABLE_BLOG_ID, blogLocalTableId);
-        slideInFromRight(context, intent);
+        intent.putExtra(StatsFragment.ARG_LOCAL_TABLE_BLOG_ID, blogLocalTableId);
+
+        if (dualPaneHost != null) {
+            showDualPaneContent(context,
+                    StatsFragment.class,
+                    context.getString(R.string.fragment_tag_stats),
+                    intent,
+                    dualPaneHost,
+                    null);
+        } else {
+            slideInFromRight(context, intent);
+        }
     }
 
     public static void viewCurrentBlogPosts(Context context, @Nullable DualPaneHost dualPaneHost) {
@@ -100,8 +113,8 @@ public class ActivityLauncher {
 
     public static void viewCurrentBlogPages(Context context, @Nullable DualPaneHost dualPaneHost) {
         Intent intent = new Intent(context, PostsListActivity.class);
-
         intent.putExtra(PostsListActivity.EXTRA_VIEW_PAGES, true);
+
         if (dualPaneHost != null) {
             showDualPaneContent(context,
                     PostsListFragment.class,
@@ -115,10 +128,36 @@ public class ActivityLauncher {
         }
     }
 
-    public static void viewCurrentBlogComments(Context context) {
+    public static void viewCurrentBlogComments(Context context, @Nullable DualPaneHost dualPaneHost) {
         Intent intent = new Intent(context, CommentsActivity.class);
-        slideInFromRight(context, intent);
-        AnalyticsUtils.trackWithCurrentBlogDetails(AnalyticsTracker.Stat.OPENED_COMMENTS);
+
+        if (dualPaneHost != null) {
+            showDualPaneContent(context,
+                    CommentsListFragment.class,
+                    context.getString(R.string.fragment_tag_comment_list),
+                    intent,
+                    dualPaneHost,
+                    AnalyticsTracker.Stat.OPENED_COMMENTS);
+        } else {
+            slideInFromRight(context, intent);
+            AnalyticsUtils.trackWithCurrentBlogDetails(AnalyticsTracker.Stat.OPENED_COMMENTS);
+        }
+    }
+
+    public static void viewCommentDetails(Activity activity, int blogLocalTableId, long commentId,
+                                          boolean slideInFromRight) {
+        if (blogLocalTableId == 0 || commentId == 0) return;
+
+        Intent intent = new Intent(activity, CommentDetailActivity.class);
+        intent.putExtra(CommentDetailActivity.KEY_COMMENT_DETAIL_LOCAL_TABLE_BLOG_ID, blogLocalTableId);
+        intent.putExtra(CommentDetailActivity.KEY_COMMENT_DETAIL_COMMENT_ID, commentId);
+
+        if (slideInFromRight) {
+            slideInFromRight(activity, intent);
+        } else {
+            activity.startActivity(intent);
+            activity.overridePendingTransition(0, 0); //mimic smooth fragment transition when not sliding in from right
+        }
     }
 
     public static void viewCurrentBlogThemes(Context context, @Nullable DualPaneHost dualPaneHost) {
@@ -345,15 +384,19 @@ public class ActivityLauncher {
         }
     }
 
-    /*
-     * called in an activity's finish to slide it out to the right if it slid in
-     * from the right when started
+    /**
+     * Called in an activity's finish to slide it out to the right if it slid in
+     * from the right when started.
+     *
+     * @return true is activity would slid out to the right on finish
      */
-    public static void slideOutToRight(Activity activity) {
+    public static boolean slideOutToRight(Activity activity) {
         if (activity != null
                 && activity.getIntent() != null
                 && activity.getIntent().hasExtra(ARG_DID_SLIDE_IN_FROM_RIGHT)) {
             activity.overridePendingTransition(R.anim.do_nothing, R.anim.activity_slide_out_to_right);
+            return true;
         }
+        return false;
     }
 }

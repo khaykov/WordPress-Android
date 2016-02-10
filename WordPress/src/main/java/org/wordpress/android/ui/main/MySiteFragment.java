@@ -268,7 +268,8 @@ public class MySiteFragment extends Fragment implements WPMainActivity.OnScrollT
                     ActivityLauncher.viewCurrentSite(getActivity());
                     break;
                 case R.id.row_stats:
-                    ActivityLauncher.viewBlogStats(getActivity(), mBlogLocalId);
+                    ActivityLauncher.viewBlogStats(getActivity(), mBlogLocalId, DualPaneHelper.getDualPaneHost
+                            (MySiteFragment.this));
                     break;
                 case R.id.row_blog_posts:
                     ActivityLauncher.viewCurrentBlogPosts(getActivity(),
@@ -282,7 +283,8 @@ public class MySiteFragment extends Fragment implements WPMainActivity.OnScrollT
                             DualPaneHelper.getDualPaneHost(MySiteFragment.this));
                     break;
                 case R.id.row_comments:
-                    ActivityLauncher.viewCurrentBlogComments(getActivity());
+                    ActivityLauncher.viewCurrentBlogComments(getActivity(),
+                            DualPaneHelper.getDualPaneHost(MySiteFragment.this));
                     break;
                 case R.id.row_themes:
                     ActivityLauncher.viewCurrentBlogThemes(getActivity(),

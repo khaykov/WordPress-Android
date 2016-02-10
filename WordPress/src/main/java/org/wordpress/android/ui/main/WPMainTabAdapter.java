@@ -87,5 +87,4 @@ public class WPMainTabAdapter extends FragmentStatePagerAdapter {
             return null;
         }
     }
-
 }

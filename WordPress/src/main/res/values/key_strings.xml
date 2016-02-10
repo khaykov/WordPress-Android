@@ -9,6 +9,7 @@
     <string name="fragment_tag_blog_post_list" translatable="false">fragment_blog_post_list</string>
     <string name="fragment_tag_blog_pages_list" translatable="false">fragment_blog_pages_list</string>
     <string name="fragment_tag_theme" translatable="false">fragment_theme</string>
+    <string name="fragment_tag_stats" translatable="false">fragment_stats</string>
 
     <!-- Preference keys -->
     <string name="pref_key_settings_root" translatable="false">wp_pref_root</string>

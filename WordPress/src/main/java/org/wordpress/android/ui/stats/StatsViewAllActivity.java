@@ -1,8 +1,8 @@
 package org.wordpress.android.ui.stats;
 
-import android.app.FragmentManager;
-import android.app.FragmentTransaction;
 import android.os.Bundle;
+import android.support.v4.app.FragmentManager;
+import android.support.v4.app.FragmentTransaction;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.text.TextUtils;
@@ -88,7 +88,7 @@ public class StatsViewAllActivity extends AppCompatActivity {
         );
 
         if (savedInstanceState != null) {
-            mLocalBlogID = savedInstanceState.getInt(StatsActivity.ARG_LOCAL_TABLE_BLOG_ID, -1);
+            mLocalBlogID = savedInstanceState.getInt(StatsFragment.ARG_LOCAL_TABLE_BLOG_ID, -1);
             Serializable oldData = savedInstanceState.getSerializable(StatsAbstractFragment.ARG_REST_RESPONSE);
             if (oldData != null && oldData instanceof Serializable[]) {
                 mRestResponse = (Serializable[]) oldData;
@@ -109,7 +109,7 @@ public class StatsViewAllActivity extends AppCompatActivity {
             }
         } else if (getIntent() != null) {
             Bundle extras = getIntent().getExtras();
-            mLocalBlogID = extras.getInt(StatsActivity.ARG_LOCAL_TABLE_BLOG_ID, -1);
+            mLocalBlogID = extras.getInt(StatsFragment.ARG_LOCAL_TABLE_BLOG_ID, -1);
             mTimeframe = (StatsTimeframe) extras.getSerializable(StatsAbstractFragment.ARGS_TIMEFRAME);
             mDate = extras.getString(StatsAbstractFragment.ARGS_SELECTED_DATE);
             mStatsViewType = (StatsViewType) extras.getSerializable(StatsAbstractFragment.ARGS_VIEW_TYPE);
@@ -145,7 +145,7 @@ public class StatsViewAllActivity extends AppCompatActivity {
                 break;
         }
 
-        FragmentManager fm = getFragmentManager();
+        FragmentManager fm = getSupportFragmentManager();
         FragmentTransaction ft = fm.beginTransaction();
         mFragment = (StatsAbstractListFragment) fm.findFragmentByTag("ViewAll-Fragment");
         if (mFragment == null) {
@@ -251,7 +251,7 @@ public class StatsViewAllActivity extends AppCompatActivity {
         fragment.setDate(mDate);
 
         Bundle args = new Bundle();
-        args.putInt(StatsActivity.ARG_LOCAL_TABLE_BLOG_ID, mLocalBlogID);
+        args.putInt(StatsFragment.ARG_LOCAL_TABLE_BLOG_ID, mLocalBlogID);
         args.putSerializable(StatsAbstractFragment.ARGS_VIEW_TYPE, mStatsViewType);
         args.putBoolean(StatsAbstractListFragment.ARGS_IS_SINGLE_VIEW, true); // Always true here
         args.putInt(StatsAbstractListFragment.ARGS_TOP_PAGER_SELECTED_BUTTON_INDEX, mOuterPagerSelectedButtonIndex);
@@ -262,7 +262,7 @@ public class StatsViewAllActivity extends AppCompatActivity {
 
     @Override
     protected void onSaveInstanceState(Bundle outState) {
-        outState.putInt(StatsActivity.ARG_LOCAL_TABLE_BLOG_ID, mLocalBlogID);
+        outState.putInt(StatsFragment.ARG_LOCAL_TABLE_BLOG_ID, mLocalBlogID);
         outState.putSerializable(StatsAbstractFragment.ARG_REST_RESPONSE, mRestResponse);
         outState.putSerializable(StatsAbstractFragment.ARGS_TIMEFRAME, mTimeframe);
         outState.putString(StatsAbstractFragment.ARGS_SELECTED_DATE, mDate);
