@@ -110,10 +110,7 @@ public class ThemeSearchFragment extends ThemeBrowserFragment implements SearchV
 
     @Override
     public boolean onMenuItemActionExpand(MenuItem item) {
-        if (item.getItemId() == R.id.menu_theme_search) {
-            return true;
-        }
-        return false;
+        return item.getItemId() == R.id.menu_theme_search;
     }
 
     @Override
