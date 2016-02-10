@@ -18,9 +18,9 @@ public class WPMainTabAdapter extends FragmentStatePagerAdapter {
     static final int NUM_TABS = 4;
 
     public static final int TAB_MY_SITE = 0;
-    public static final int TAB_READER = 1;
-    public static final int TAB_ME = 2;
-    public static final int TAB_NOTIFS = 3;
+    public static final int TAB_READER  = 1;
+    public static final int TAB_ME      = 2;
+    public static final int TAB_NOTIFS  = 3;
 
     private final SparseArray<Fragment> mFragments = new SparseArray<>(NUM_TABS);
 

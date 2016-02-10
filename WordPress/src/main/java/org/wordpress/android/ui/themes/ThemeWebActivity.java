@@ -1,7 +1,7 @@
 package org.wordpress.android.ui.themes;
 
-import android.app.Activity;
 import android.content.Intent;
+import android.support.v4.app.Fragment;
 import android.text.TextUtils;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -33,29 +33,29 @@ public class ThemeWebActivity extends WPWebViewActivity {
         SUPPORT
     }
 
-    public static void openTheme(Activity activity, String themeId, ThemeWebActivityType type, boolean isCurrentTheme) {
+    public static void openTheme(Fragment fragment, String themeId, ThemeWebActivityType type, boolean isCurrentTheme) {
         String blogId = WordPress.getCurrentBlog().getDotComBlogId();
         Theme currentTheme = WordPress.wpDB.getTheme(blogId, themeId);
         String url = getUrl(currentTheme, type, currentTheme.isPremium());
 
-        openWPCOMURL(activity, url, currentTheme, WordPress.getCurrentBlog(), isCurrentTheme);
+        openWPCOMURL(fragment, url, currentTheme, WordPress.getCurrentBlog(), isCurrentTheme);
     }
 
-    private static void openWPCOMURL(Activity activity, String url, Theme currentTheme, Blog blog, Boolean isCurrentTheme) {
-        if (activity == null) {
-            AppLog.e(AppLog.T.UTILS, "Context is null");
+    private static void openWPCOMURL(Fragment fragment, String url, Theme currentTheme, Blog blog, Boolean isCurrentTheme) {
+        if (!fragment.isAdded()) {
+            AppLog.e(AppLog.T.UTILS, "Fragment is not added.");
             return;
         }
 
         if (TextUtils.isEmpty(url)) {
             AppLog.e(AppLog.T.UTILS, "Empty or null URL passed to openWPCOMURL");
-            Toast.makeText(activity, activity.getResources().getText(R.string.invalid_url_message),
+            Toast.makeText(fragment.getActivity(), fragment.getResources().getText(R.string.invalid_url_message),
                     Toast.LENGTH_SHORT).show();
             return;
         }
 
         String authURL = ThemeWebActivity.getBlogLoginUrl(blog);
-        Intent intent = new Intent(activity, ThemeWebActivity.class);
+        Intent intent = new Intent(fragment.getActivity(), ThemeWebActivity.class);
         intent.putExtra(ThemeWebActivity.AUTHENTICATION_USER, blog.getUsername());
         intent.putExtra(ThemeWebActivity.AUTHENTICATION_PASSWD, blog.getPassword());
         intent.putExtra(ThemeWebActivity.URL_TO_LOAD, url);
@@ -64,9 +64,9 @@ public class ThemeWebActivity extends WPWebViewActivity {
         intent.putExtra(IS_PREMIUM_THEME, currentTheme.isPremium());
         intent.putExtra(IS_CURRENT_THEME, isCurrentTheme);
         intent.putExtra(THEME_NAME, currentTheme.getName());
-        intent.putExtra(ThemeBrowserActivity.THEME_ID, currentTheme.getId());
+        intent.putExtra(ThemeFragment.THEME_ID, currentTheme.getId());
 
-        activity.startActivityForResult(intent, ThemeBrowserActivity.ACTIVATE_THEME);
+        fragment.startActivityForResult(intent, ThemeFragment.ACTIVATE_THEME);
     }
 
     public static String getUrl(Theme theme, ThemeWebActivityType type, boolean isPremium) {
@@ -119,8 +119,8 @@ public class ThemeWebActivity extends WPWebViewActivity {
         if (item.getItemId() == R.id.action_activate) {
             Intent returnIntent = new Intent();
             setResult(RESULT_OK, returnIntent);
-            returnIntent.putExtra(ThemeBrowserActivity.THEME_ID,
-                    getIntent().getStringExtra(ThemeBrowserActivity.THEME_ID));
+            returnIntent.putExtra(ThemeFragment.THEME_ID,
+                    getIntent().getStringExtra(ThemeFragment.THEME_ID));
             finish();
             return true;
         } else {

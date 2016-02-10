@@ -8,6 +8,7 @@
     <string name="fragment_tag_post_preview" translatable="false">fragment_post_preview</string>
     <string name="fragment_tag_blog_post_list" translatable="false">fragment_blog_post_list</string>
     <string name="fragment_tag_blog_pages_list" translatable="false">fragment_blog_pages_list</string>
+    <string name="fragment_tag_theme" translatable="false">fragment_theme</string>
     <string name="fragment_tag_stats" translatable="false">fragment_stats</string>
 
     <!-- Preference keys -->

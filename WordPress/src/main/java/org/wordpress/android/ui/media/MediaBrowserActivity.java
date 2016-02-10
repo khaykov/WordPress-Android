@@ -1,8 +1,8 @@
 package org.wordpress.android.ui.media;
 
-import android.app.Fragment;
-import android.app.FragmentManager;
-import android.app.FragmentTransaction;
+import android.support.v4.app.Fragment;
+import android.support.v4.app.FragmentManager;
+import android.support.v4.app.FragmentTransaction;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -111,7 +111,7 @@ public class MediaBrowserActivity extends AppCompatActivity implements MediaGrid
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         getSupportActionBar().setTitle(R.string.media);
 
-        FragmentManager fm = getFragmentManager();
+        FragmentManager fm = getSupportFragmentManager();
         fm.addOnBackStackChangedListener(mOnBackStackChangedListener);
         FragmentTransaction ft = fm.beginTransaction();
 
@@ -188,7 +188,7 @@ public class MediaBrowserActivity extends AppCompatActivity implements MediaGrid
 
     private final FragmentManager.OnBackStackChangedListener mOnBackStackChangedListener = new FragmentManager.OnBackStackChangedListener() {
         public void onBackStackChanged() {
-            FragmentManager manager = getFragmentManager();
+            FragmentManager manager = getSupportFragmentManager();
             MediaGridFragment mediaGridFragment = (MediaGridFragment)manager.findFragmentById(R.id.mediaGridFragment);
             if (mediaGridFragment.isVisible()) {
                 mediaGridFragment.refreshSpinnerAdapter();
@@ -251,7 +251,7 @@ public class MediaBrowserActivity extends AppCompatActivity implements MediaGrid
     }
 
     private void showVideoPressUpgradeDialog() {
-        FragmentTransaction ft = getFragmentManager().beginTransaction();
+        FragmentTransaction ft = getSupportFragmentManager().beginTransaction();
         String title = getString(R.string.media_no_video_title);
         String message = getString(R.string.media_no_video_message);
         String infoTitle = getString(R.string.learn_more);
@@ -306,7 +306,7 @@ public class MediaBrowserActivity extends AppCompatActivity implements MediaGrid
             MenuItemCompat.collapseActionView(mSearchMenuItem);
         }
 
-        FragmentManager fm = getFragmentManager();
+        FragmentManager fm = getSupportFragmentManager();
         if (fm.getBackStackEntryCount() == 0) {
             FragmentTransaction ft = fm.beginTransaction();
             ft.hide(mMediaGridFragment);
@@ -373,7 +373,7 @@ public class MediaBrowserActivity extends AppCompatActivity implements MediaGrid
             return true;
         } else if (i == R.id.menu_edit_media) {
             String mediaId = mMediaItemFragment.getMediaId();
-            FragmentManager fm = getFragmentManager();
+            FragmentManager fm = getSupportFragmentManager();
 
             if (mMediaEditFragment == null || !mMediaEditFragment.isInLayout()) {
                 // phone layout: hide item details, show and update edit fragment
@@ -476,7 +476,7 @@ public class MediaBrowserActivity extends AppCompatActivity implements MediaGrid
 
     public void onSavedEdit(String mediaId, boolean result) {
         if (mMediaEditFragment != null && mMediaEditFragment.isVisible() && result) {
-            FragmentManager fm = getFragmentManager();
+            FragmentManager fm = getSupportFragmentManager();
             fm.popBackStack();
 
             // refresh media item details (phone-only)
@@ -496,7 +496,7 @@ public class MediaBrowserActivity extends AppCompatActivity implements MediaGrid
 
     @Override
     public void onBackPressed() {
-        FragmentManager fm = getFragmentManager();
+        FragmentManager fm = getSupportFragmentManager();
         if (fm.getBackStackEntryCount() > 0) {
             fm.popBackStack();
         } else {

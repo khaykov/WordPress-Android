@@ -19,6 +19,8 @@
         android:layout_height="match_parent">
 
         <org.wordpress.android.widgets.HeaderGridView
+            android:clipToPadding="false"
+            android:paddingTop="@dimen/margin_small"
             android:id="@+id/theme_listview"
             android:layout_width="match_parent"
             android:layout_height="match_parent"

@@ -26,7 +26,7 @@ import org.wordpress.android.ui.RequestCodes;
 import org.wordpress.android.ui.accounts.BlogUtils;
 import org.wordpress.android.ui.posts.EditPostActivity;
 import org.wordpress.android.ui.stats.service.StatsService;
-import org.wordpress.android.ui.themes.ThemeBrowserActivity;
+import org.wordpress.android.ui.themes.ThemeFragment;
 import org.wordpress.android.util.AniUtils;
 import org.wordpress.android.util.CoreEvents;
 import org.wordpress.android.util.DisplayUtils;
@@ -287,7 +287,8 @@ public class MySiteFragment extends Fragment implements WPMainActivity.OnScrollT
                             DualPaneHelper.getDualPaneHost(MySiteFragment.this));
                     break;
                 case R.id.row_themes:
-                    ActivityLauncher.viewCurrentBlogThemes(getActivity());
+                    ActivityLauncher.viewCurrentBlogThemes(getActivity(),
+                            DualPaneHelper.getDualPaneHost(MySiteFragment.this));
                     break;
                 case R.id.row_settings:
                     ActivityLauncher.viewBlogSettingsForResult(getActivity(), WordPress.getBlog(mBlogLocalId));
@@ -401,7 +402,7 @@ public class MySiteFragment extends Fragment implements WPMainActivity.OnScrollT
         mScrollView.setVisibility(View.VISIBLE);
         mNoSiteView.setVisibility(View.GONE);
 
-        int themesVisibility = ThemeBrowserActivity.isAccessible() ? View.VISIBLE : View.GONE;
+        int themesVisibility = ThemeFragment.isAccessible() ? View.VISIBLE : View.GONE;
         mLookAndFeelHeader.setVisibility(themesVisibility);
         mThemesContainer.setVisibility(themesVisibility);
 
